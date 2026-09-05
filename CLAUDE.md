@@ -16,6 +16,7 @@ que fournit Stream Deck.
 ```bash
 npm run build        # bundle src/ -> bin/plugin.js
 npm run typecheck    # couvre src/ et scripts/
+npm run validate     # conformité du manifest au schéma Elgato
 npm run check        # integrité du dossier .sdPlugin (ajouter --release avant publication)
 npm run preview      # rend les visuels de touche en SVG dans .preview/, données réelles
 npm run icons        # régénère les PNG depuis les tracés de scripts/make-icons.mjs
@@ -75,7 +76,10 @@ interprétés ; tout le reste part tel quel. Écrire `"disabled"` fait lancer
 `node disabled plugin.js`, qui meurt instantanément **sans rien écrire dans les
 journaux du plugin** — on ne voit qu'une boucle de relance, puis Stream Deck
 déclare le plugin instable et le désactive. Pour ne pas déboguer : **omettre le
-champ**. `npm run check` refuse désormais toute autre valeur.
+champ**. `npm run check` refuse désormais toute autre valeur — et c'est lui
+seul : `streamdeck validate` laisse passer `"disabled"` sans broncher, puisque
+le schéma autorise n'importe quelle chaîne. Les deux contrôles sont
+complémentaires, garder les deux.
 
 **Une promesse rejetée sans capture tue le processus.** Node sort avec le code
 1, Stream Deck relance, et après huit cycles il désactive le plugin — l'utilisateur

@@ -46,6 +46,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Conformité du manifest au schéma Elgato
+        run: npm run validate
+
       - name: Intégrité du dossier plugin
         run: npm run check
 

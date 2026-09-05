@@ -1,6 +1,6 @@
 {
 	"Name": "ZEvent",
-	"Version": "1.1.1.0",
+	"Version": "1.1.2.0",
 	"Author": "QuentinPerou",
 	"Description": "Affiche les cagnottes du ZEvent sur vos touches et ouvre la chaîne Twitch du streamer d'un simple appui.",
 	"Category": "ZEvent",
@@ -9,6 +9,7 @@
 	"UUID": "fr.quentinperou.zevent",
 	"Icon": "imgs/plugin-icon",
 	"URL": "https://zevent.fr",
+	"SupportURL": "https://github.com/quentinperou/streamdeck-zevent",
 	"Actions": [
 		{
 			"Icon": "imgs/actions/streamer/action-icon",
@@ -70,7 +71,7 @@
 	],
 	"SDKVersion": 2,
 	"Software": {
-		"MinimumVersion": "6.5"
+		"MinimumVersion": "6.9"
 	},
 	"OS": [
 		{

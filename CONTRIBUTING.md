@@ -21,7 +21,7 @@ données figées, ce qui change beaucoup de comportements.
 
 ## Mise en route
 
-Il faut **Node 20 ou plus** et **Stream Deck 6.5 ou plus**.
+Il faut **Node 20 ou plus** et **Stream Deck 6.9 ou plus**.
 
 ```bash
 npm install

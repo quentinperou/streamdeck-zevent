@@ -1,6 +1,6 @@
 {
   "name": "fr.quentinperou.zevent",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "ZEvent donation totals on your Stream Deck",
   "scripts": {
     "build": "rollup -c",
@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "sync-version": "node scripts/sync-version.mjs",
     "version": "node scripts/sync-version.mjs && git add fr.quentinperou.zevent.sdPlugin/manifest.json README.md",
-    "check": "node scripts/check-plugin.mjs"
+    "check": "node scripts/check-plugin.mjs",
+    "validate": "streamdeck validate fr.quentinperou.zevent.sdPlugin"
   },
   "keywords": [
     "streamdeck",
