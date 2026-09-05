@@ -9,7 +9,7 @@ chaîne Twitch du streamer d'un simple appui.
 
 BOURREZ LES DONS !!
 
-![Des touches Stream Deck affichant la cagnotte globale du ZEvent, les cagnottes de plusieurs streamers avec leur nombre de viewers, et deux jauges de progression vers un palier de dons](.github/apercu.png)
+![Un Stream Deck rempli de touches ZEvent : les cagnottes de Domingo, Mastu, mistermv et d'autres avec leur nombre de viewers, le total du ZEvent à 6 344 796 €, des jauges de progression vers des paliers de dons, un libellé de palier affiché en toutes lettres, un classement des quatre premières cagnottes, et la touche de mcflyetcarlito encadrée de blanc annonçant un temps fort à +19 073 €](.github/apercu.png)
 
 ## Installation
 
