@@ -17,7 +17,7 @@ function write(name: string, dataUri: string): void {
 }
 
 async function main(): Promise<void> {
-	await zevent.refresh(true);
+	await zevent.refresh();
 
 	console.log("erreur      :", zevent.error ?? "aucune");
 	console.log("streamers   :", zevent.streamers.length);

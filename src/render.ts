@@ -13,6 +13,14 @@ const CONTENT_WIDTH = SIZE - PADDING * 2;
 const FONT = "Arial, Helvetica, sans-serif";
 
 /**
+ * Centre optique du montant, dans la bande laissée libre entre le pseudo et la
+ * ligne des viewers. Sans cette dernière, la bande descend jusqu'au bandeau et
+ * le centre suit.
+ */
+const AMOUNT_CENTER = 70;
+const AMOUNT_CENTER_ALONE = 85;
+
+/**
  * Palette relevée sur zevent.fr : vert #00BD00 en accent, noirs neutres en fond.
  * Le site réserve le blanc à ses grands compteurs et le vert aux montants de sa
  * liste de streamers — les touches reprennent cette répartition, et le vert y
@@ -20,10 +28,16 @@ const FONT = "Arial, Helvetica, sans-serif";
  */
 const COLORS = {
 	background: "#0B0B0B",
-	amount: "#00BD00",
+	/**
+	 * Le vert de marque #00BD00 tient en aplat mais s'effondre en texte posé sur
+	 * un avatar assombri. #66D766, autre valeur de la palette du site, conserve
+	 * l'identité et redevient lisible à 72 pixels.
+	 */
+	amount: "#66D766",
 	name: "#FFFFFF",
 	nameOffline: "#8B8B8B",
-	muted: "#A3A3A3",
+	muted: "#C9C9C9",
+	/** Le bandeau est un aplat : il garde le vert de marque. */
 	live: "#00BD00",
 	offline: "#242424",
 	stale: "#F0A020",
@@ -49,6 +63,24 @@ const GLYPH_WIDTHS: Record<string, number> = {
 	"{": 389, "|": 280, "}": 389, "~": 584, "€": 556, "…": 1000, "·": 333,
 };
 const DEFAULT_GLYPH_WIDTH = 600;
+
+/**
+ * Hauteur de capitale d'Arial Bold, en fraction de la taille de police. Les
+ * montants sont faits de chiffres et d'un « € », tous de pleine hauteur : c'est
+ * elle, et non la hauteur de ligne, qui décrit ce que l'œil voit.
+ */
+const CAP_HEIGHT_RATIO = 0.716;
+
+/**
+ * Ligne de base qui centre optiquement un texte sur `center`.
+ *
+ * SVG positionne par la ligne de base, sous les glyphes : une valeur fixe
+ * décentre dès que la taille de police change — et elle change, puisqu'elle
+ * s'adapte à la longueur du montant.
+ */
+function centeredBaseline(center: number, size: number): number {
+	return Math.round(center + (size * CAP_HEIGHT_RATIO) / 2);
+}
 
 function glyphUnits(text: string): number {
 	let total = 0;
@@ -126,7 +158,7 @@ function background(avatar: string | null): string {
 	return body;
 }
 
-/** Bandeau bas : rouge en direct, gris sinon — l'état se lit sans lire le texte. */
+/** Bandeau bas : vert en direct, gris sinon — l'état se lit sans lire le texte. */
 function statusBar(color: string): string {
 	return `<rect x="0" y="${SIZE - 5}" width="${SIZE}" height="5" fill="${color}"/>`;
 }
@@ -158,7 +190,7 @@ export function renderStreamerKey(options: StreamerKeyOptions): string {
 		fill: online ? COLORS.name : COLORS.nameOffline,
 	});
 	body += text(amount, {
-		y: viewers ? 89 : 99,
+		y: centeredBaseline(viewers ? AMOUNT_CENTER : AMOUNT_CENTER_ALONE, amountSize),
 		size: amountSize,
 		fill: COLORS.amount,
 	});
@@ -168,7 +200,6 @@ export function renderStreamerKey(options: StreamerKeyOptions): string {
 			y: 121,
 			size,
 			fill: COLORS.muted,
-			weight: "normal",
 		});
 	}
 	body += statusBar(online ? COLORS.live : COLORS.offline);
@@ -197,7 +228,7 @@ export function renderTotalKey(options: TotalKeyOptions): string {
 		fill: COLORS.amount,
 	});
 	body += text(amount, {
-		y: viewers ? 89 : 99,
+		y: centeredBaseline(viewers ? AMOUNT_CENTER : AMOUNT_CENTER_ALONE, amountSize),
 		size: amountSize,
 		fill: COLORS.name,
 	});
@@ -207,7 +238,6 @@ export function renderTotalKey(options: TotalKeyOptions): string {
 			y: 121,
 			size,
 			fill: COLORS.muted,
-			weight: "normal",
 		});
 	}
 	body += statusBar(COLORS.live);

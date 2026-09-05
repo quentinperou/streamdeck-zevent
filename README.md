@@ -1,7 +1,7 @@
 # ZEvent pour Stream Deck
 
 [![Build](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml/badge.svg)](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-1.0.0-00BD00)](https://github.com/quentinperou/streamdeck-zevent/releases)
+[![Version](https://img.shields.io/badge/version-1.0.1-00BD00)](https://github.com/quentinperou/streamdeck-zevent/releases)
 [![Licence](https://img.shields.io/badge/licence-MIT-00BD00)](LICENSE)
 
 Affiche les cagnottes du ZEvent sur les touches d'un Stream Deck, et ouvre la
@@ -47,6 +47,10 @@ neutres `#0B0B0B` / `#242424` en fond. Le site réserve le blanc à ses grands
 compteurs et le vert aux montants de sa liste de streamers — les touches
 reprennent cette répartition : cagnotte d'un streamer en vert, total du ZEvent
 en blanc sous un intitulé vert.
+
+Le texte, lui, utilise **`#66D766`**, autre valeur de la même palette : à
+72 pixels, sur un avatar assombri, le vert de marque perd trop de lisibilité en
+petits caractères. Le bandeau « en direct », qui est un aplat, garde `#00BD00`.
 
 L'incrustation sombre posée sur l'avatar est calibrée pour que le vert reste
 lisible même sur un portrait clair ou très saturé.

@@ -5,9 +5,11 @@ import type {
 	KeyAction,
 	KeyUpEvent,
 	WillAppearEvent,
+	WillDisappearEvent,
 } from "@elgato/streamdeck";
 
 import { formatAmount, formatViewers, type NumberFormat } from "../format";
+import { KeyImageCache } from "../key-image";
 import { renderMessageKey, renderTotalKey } from "../render";
 import { zevent } from "../zevent";
 
@@ -22,13 +24,19 @@ type AnyAction = KeyAction<TotalSettings> | DialAction<TotalSettings>;
 
 @action({ UUID: "fr.quentinperou.zevent.total" })
 export class TotalAction extends SingletonAction<TotalSettings> {
+	readonly #images = new KeyImageCache();
+
 	override async onWillAppear(ev: WillAppearEvent<TotalSettings>): Promise<void> {
 		zevent.retain();
+		// La touche revient sur l'image par défaut du manifest : ce qu'on croyait
+		// lui avoir envoyé ne vaut plus rien.
+		this.#images.forget(ev.action.id);
 		await this.#render(ev.action, ev.payload.settings);
 	}
 
-	override onWillDisappear(): void {
+	override onWillDisappear(ev: WillDisappearEvent<TotalSettings>): void {
 		zevent.release();
+		this.#images.forget(ev.action.id);
 	}
 
 	override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<TotalSettings>): Promise<void> {
@@ -52,7 +60,8 @@ export class TotalAction extends SingletonAction<TotalSettings> {
 
 		const totals = zevent.totals;
 		if (!totals) {
-			await target.setImage(
+			await this.#images.apply(
+				target,
 				zevent.error ? renderMessageKey("ZEvent injoignable", "warning") : renderMessageKey("Chargement…"),
 			);
 			return;
@@ -60,7 +69,8 @@ export class TotalAction extends SingletonAction<TotalSettings> {
 
 		const format = settings.numberFormat ?? "full";
 
-		await target.setImage(
+		await this.#images.apply(
+			target,
 			renderTotalKey({
 				label: settings.label?.trim() || "ZEVENT",
 				amount: formatAmount(totals.donation, totals.donationText, format),
