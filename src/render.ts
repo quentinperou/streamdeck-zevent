@@ -8,8 +8,29 @@
  */
 
 const SIZE = 144;
-const PADDING = 6;
+/**
+ * Marge latérale.
+ *
+ * Les montants sont dimensionnés pour occuper toute la largeur disponible :
+ * chaque pixel de marge est donc un pixel de police en moins, et seuls les
+ * nombres longs sont concernés — les autres plafonnent bien avant d'atteindre
+ * la limite. Mesuré sur le rendu : 18 laisse 9 pixels d'encre au bord à la
+ * taille réelle de la touche, contre 6 auparavant, pour trois points de police
+ * sur un montant à six chiffres.
+ */
+const PADDING = 18;
 const CONTENT_WIDTH = SIZE - PADDING * 2;
+
+/**
+ * Marge d'un paragraphe, plus serrée.
+ *
+ * Un montant est une ligne courte que l'air met en valeur ; un libellé de
+ * palier est un bloc de texte qui remplit la touche, et chaque pixel repris sur
+ * les côtés lui coûte une taille de police ou une ligne de plus. Les aérer
+ * pareillement desservirait le second.
+ */
+const PARAGRAPH_PADDING = 10;
+const PARAGRAPH_WIDTH = SIZE - PARAGRAPH_PADDING * 2;
 const FONT = "Arial, Helvetica, sans-serif";
 
 /**
@@ -145,19 +166,100 @@ function toDataUri(body: string): string {
 	return `data:image/svg+xml;base64,${Buffer.from(svg, "utf8").toString("base64")}`;
 }
 
-/** Fond : avatar assombri s'il est disponible, aplat sinon. */
-function background(avatar: string | null): string {
+/**
+ * Fond : avatar assombri s'il est disponible, aplat sinon.
+ *
+ * L'opacité par défaut est calibrée pour qu'un montant vert reste lisible sur
+ * n'importe quel avatar, y compris les portraits clairs ou très saturés. Un
+ * texte dense en demande davantage.
+ */
+function background(avatar: string | null, overlay = 0.78): string {
 	let body = `<rect width="${SIZE}" height="${SIZE}" fill="${COLORS.background}"/>`;
 	if (avatar) {
 		// `xlink:href` plutôt que `href` : l'image pèse à elle seule l'essentiel du
 		// message envoyé à Stream Deck, on ne la duplique pas pour deux syntaxes.
 		body +=
 			`<image x="0" y="0" width="${SIZE}" height="${SIZE}" xlink:href="${avatar}"/>` +
-			// Assez sombre pour qu'un montant vert reste lisible sur n'importe quel
-			// avatar, y compris les portraits clairs ou très saturés.
-			`<rect width="${SIZE}" height="${SIZE}" fill="#000000" opacity="0.78"/>`;
+			`<rect width="${SIZE}" height="${SIZE}" fill="#000000" opacity="${overlay}"/>`;
 	}
 	return body;
+}
+
+/**
+ * Découpe en mots, en recollant la ponctuation orpheline.
+ *
+ * Le français fait précéder « ! » et « ? » d'une espace : « (promis juré !) »
+ * se couperait sinon en « (promis juré » et « !) », laissant deux caractères
+ * seuls sur une ligne.
+ */
+function splitWords(text: string): string[] {
+	const words: string[] = [];
+
+	for (const word of text.split(/\s+/).filter(Boolean)) {
+		if (words.length > 0 && /^[!?:;»)\]]+$/.test(word)) {
+			words[words.length - 1] += ` ${word}`;
+		} else {
+			words.push(word);
+		}
+	}
+	return words;
+}
+
+/** Découpe un texte en lignes qui tiennent dans `maxWidth` à cette taille. */
+function wrapText(text: string, maxWidth: number, size: number): string[] {
+	const limit = (maxWidth * 1000) / size;
+	const lines: string[] = [];
+	let current = "";
+
+	for (const word of splitWords(text)) {
+		const candidate = current ? `${current} ${word}` : word;
+		if (glyphUnits(candidate) > limit && current) {
+			lines.push(current);
+			current = word;
+		} else {
+			current = candidate;
+		}
+	}
+	if (current) lines.push(current);
+	return lines;
+}
+
+/**
+ * Tailles essayées pour un paragraphe, de la plus confortable à la plus dense.
+ * On commence haut : la plupart des libellés tiennent largement, et rien
+ * n'oblige à les afficher petit sous prétexte que d'autres sont longs.
+ */
+const PARAGRAPH_SIZES = [22, 20, 18, 17, 16, 15, 14, 13, 12, 11, 10];
+
+/** Interligne confortable pour du texte dense. */
+function lineHeightFor(size: number): number {
+	return Math.round(size * 1.25);
+}
+
+/**
+ * Plus grande taille à laquelle le texte tient dans la hauteur donnée. Les
+ * titres de paliers sont des phrases entières, parfois longues : on réduit la
+ * police et on multiplie les lignes d'abord, la troncature n'est qu'un dernier
+ * recours. Raisonner en hauteur plutôt qu'en nombre de lignes est nécessaire —
+ * six lignes tiennent à 10 pixels, pas à 16.
+ */
+function fitParagraph(
+	text: string,
+	maxWidth: number,
+	maxHeight: number,
+): { size: number; lines: string[]; lineHeight: number } {
+	for (const size of PARAGRAPH_SIZES) {
+		const lines = wrapText(text, maxWidth, size);
+		const lineHeight = lineHeightFor(size);
+		if (lines.length * lineHeight <= maxHeight) return { size, lines, lineHeight };
+	}
+
+	// Même au plus petit, ça déborde : on coupe et on le signale.
+	const size = PARAGRAPH_SIZES[PARAGRAPH_SIZES.length - 1]!;
+	const lineHeight = lineHeightFor(size);
+	const lines = wrapText(text, maxWidth, size).slice(0, Math.floor(maxHeight / lineHeight));
+	lines[lines.length - 1] = `${lines[lines.length - 1]!.trimEnd()}…`;
+	return { size, lines, lineHeight };
 }
 
 /** Bandeau bas : vert en direct, gris sinon — l'état se lit sans lire le texte. */
@@ -248,7 +350,8 @@ export function renderTotalKey(options: TotalKeyOptions): string {
 	return toDataUri(body);
 }
 
-const BAR = { x: 10, y: 84, width: SIZE - 20, height: 12, radius: 3 };
+/** Alignée sur la marge du texte : une jauge plus large que les mots au-dessus se verrait. */
+const BAR = { x: PADDING, y: 84, width: CONTENT_WIDTH, height: 12, radius: 3 };
 
 /**
  * Barre de progression. Deux rectangles, pas de dégradé ni de masque : c'est
@@ -314,10 +417,56 @@ export function renderGoalKey(options: GoalKeyOptions): string {
 	return toDataUri(body);
 }
 
+export type GoalTitleKeyOptions = {
+	title: string;
+	amount: string;
+	online: boolean;
+	avatar: string | null;
+};
+
+/**
+ * Le libellé d'un palier, en entier, le temps d'un appui.
+ *
+ * Ces titres sont des phrases — « Je vous offre une maison (promis juré !) » —
+ * qu'aucune touche ne peut afficher en permanence. Les montrer à la demande
+ * évite d'avoir à ouvrir le Property Inspector pour savoir ce qu'on vise.
+ */
+export function renderGoalTitleKey(options: GoalTitleKeyOptions): string {
+	const { title, amount, online, avatar } = options;
+
+	// Marges resserrées : chaque pixel rendu au texte permet une police plus
+	// grande, et le libellé n'est à l'écran que cinq secondes.
+	const TOP = 8;
+	const BOTTOM = 112;
+	const { size, lines, lineHeight } = fitParagraph(title, PARAGRAPH_WIDTH, BOTTOM - TOP);
+
+	// Fond plus sombre qu'à l'accoutumée : un paragraphe demande plus de calme
+	// qu'un montant de trois chiffres.
+	let body = background(avatar, 0.88);
+
+	const block = lines.length * lineHeight;
+	const start = TOP + (BOTTOM - TOP - block) / 2 + size;
+
+	lines.forEach((line, index) => {
+		body += text(line, {
+			y: Math.round(start + index * lineHeight),
+			size,
+			fill: COLORS.name,
+			weight: "normal",
+		});
+	});
+
+	const amountSize = fitFontSize(amount, CONTENT_WIDTH, 17, 11);
+	body += text(amount, { y: 128, size: amountSize, fill: COLORS.amount });
+	body += statusBar(online ? COLORS.live : COLORS.offline);
+
+	return toDataUri(body);
+}
+
 /** Touche d'attente ou d'erreur : un message court, centré, sur trois lignes au plus. */
 export function renderMessageKey(message: string, tone: "neutral" | "warning" = "neutral"): string {
 	const size = 16;
-	const limit = (CONTENT_WIDTH * 1000) / size;
+	const limit = (PARAGRAPH_WIDTH * 1000) / size;
 
 	const lines: string[] = [];
 	let current = "";

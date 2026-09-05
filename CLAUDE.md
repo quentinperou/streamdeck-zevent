@@ -37,6 +37,7 @@ Avant de proposer quoi que ce soit : `sync-version -- --check`, `typecheck`,
 | `src/render.ts` | Visuels de touche en SVG |
 | `src/format.ts` | Nombres complets ou abrégés |
 | `src/key-image.ts` | Évite de réenvoyer une image identique |
+| `src/press.ts` | Distingue appui court et appui long, absents du SDK |
 | `src/pi.ts` | Pousse le catalogue vers le Property Inspector |
 | `ui/` | Property Inspectors, HTML/CSS/JS sans build |
 

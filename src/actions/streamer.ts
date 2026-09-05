@@ -3,6 +3,7 @@ import type {
 	DialAction,
 	DidReceiveSettingsEvent,
 	KeyAction,
+	KeyDownEvent,
 	KeyUpEvent,
 	WillAppearEvent,
 	WillDisappearEvent,
@@ -10,15 +11,23 @@ import type {
 
 import { formatAmount, formatViewers, type NumberFormat } from "../format";
 import { KeyImageCache } from "../key-image";
+import { PressTracker } from "../press";
 import { renderMessageKey, renderStreamerKey } from "../render";
+import { safely } from "../safety";
 import { zevent } from "../zevent";
+
+/** Ce qu’un appui déclenche. « none » laisse la touche inerte. */
+export type StreamerPressAction = "twitch" | "donation" | "none";
 
 export type StreamerSettings = {
 	login?: string;
 	showAvatar?: boolean;
 	showViewers?: boolean;
 	numberFormat?: NumberFormat;
-	clickAction?: "twitch" | "donation";
+	/** Appui court. */
+	clickAction?: StreamerPressAction;
+	/** Appui long, inerte par défaut pour ne rien changer aux touches existantes. */
+	longPressAction?: StreamerPressAction;
 };
 
 type AnyAction = KeyAction<StreamerSettings> | DialAction<StreamerSettings>;
@@ -28,6 +37,7 @@ export class StreamerAction extends SingletonAction<StreamerSettings> {
 	readonly #images = new KeyImageCache();
 	/** Derniers réglages connus de chaque touche, poussés par Stream Deck. */
 	readonly #settings = new Map<string, StreamerSettings>();
+	readonly #presses = new PressTracker();
 
 	override async onWillAppear(ev: WillAppearEvent<StreamerSettings>): Promise<void> {
 		zevent.retain();
@@ -42,6 +52,7 @@ export class StreamerAction extends SingletonAction<StreamerSettings> {
 		zevent.release();
 		this.#images.forget(ev.action.id);
 		this.#settings.delete(ev.action.id);
+		this.#presses.forget(ev.action.id);
 	}
 
 	override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<StreamerSettings>): Promise<void> {
@@ -49,16 +60,38 @@ export class StreamerAction extends SingletonAction<StreamerSettings> {
 		await this.#render(ev.action, ev.payload.settings);
 	}
 
+	override onKeyDown(ev: KeyDownEvent<StreamerSettings>): void {
+		const settings = ev.payload.settings;
+		this.#presses.down(ev.action.id, () => {
+			safely(this.#run(ev.action, settings.longPressAction ?? "none", settings), "appui long");
+		});
+	}
+
 	override async onKeyUp(ev: KeyUpEvent<StreamerSettings>): Promise<void> {
-		const login = ev.payload.settings.login?.trim();
+		// L'action longue s'est déjà déclenchée au seuil : le relâchement ne doit
+		// pas en jouer une seconde.
+		if (!this.#presses.up(ev.action.id)) return;
+
+		const settings = ev.payload.settings;
+		await this.#run(ev.action, settings.clickAction ?? "twitch", settings);
+	}
+
+	async #run(
+		target: KeyAction<StreamerSettings>,
+		what: StreamerPressAction,
+		settings: StreamerSettings,
+	): Promise<void> {
+		if (what === "none") return;
+
+		const login = settings.login?.trim();
 		if (!login) {
-			await ev.action.showAlert();
+			await target.showAlert();
 			return;
 		}
 
 		const streamer = zevent.find(login);
 		const url =
-			ev.payload.settings.clickAction === "donation"
+			what === "donation"
 				? (streamer?.donationUrl ?? `https://zevent.fr/don/${login}`)
 				: `https://www.twitch.tv/${login}`;
 

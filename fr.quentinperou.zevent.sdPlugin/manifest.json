@@ -1,8 +1,8 @@
 {
 	"Name": "ZEvent",
-	"Version": "1.2.1.0",
+	"Version": "1.3.0.0",
 	"Author": "QuentinPerou",
-	"Description": "Affiche les cagnottes du ZEvent sur vos touches et ouvre la chaîne Twitch du streamer d'un simple appui.",
+	"Description": "Suivez le ZEvent sur vos touches Stream Deck : la cagnotte de chaque streamer, le total de l'événement et la progression vers les paliers de dons, actualisés en continu. Un appui ouvre la chaîne Twitch du streamer.",
 	"Category": "ZEvent",
 	"CategoryIcon": "imgs/category-icon",
 	"CodePath": "bin/plugin.js",

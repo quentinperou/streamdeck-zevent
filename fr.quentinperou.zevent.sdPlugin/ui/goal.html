@@ -54,11 +54,25 @@
 		</div>
 
 		<div class="row">
-			<label for="click">Au clic</label>
+			<label for="click">Appui court</label>
 			<div class="field">
 				<select id="click">
 					<option value="twitch">Ouvrir la chaîne Twitch</option>
 					<option value="donation">Ouvrir la page de don</option>
+					<option value="title">Afficher le nom du palier (5 s)</option>
+					<option value="none">Ne rien faire</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="row">
+			<label for="long">Appui long</label>
+			<div class="field">
+				<select id="long">
+					<option value="none">Ne rien faire</option>
+					<option value="twitch">Ouvrir la chaîne Twitch</option>
+					<option value="donation">Ouvrir la page de don</option>
+					<option value="title">Afficher le nom du palier (5 s)</option>
 				</select>
 			</div>
 		</div>
@@ -298,6 +312,11 @@
 					save();
 				});
 
+				$("long").addEventListener("change", function () {
+					settings.longPressAction = $("long").value;
+					save();
+				});
+
 				$("click").addEventListener("change", function () {
 					settings.clickAction = $("click").value;
 					save();
@@ -318,7 +337,8 @@
 					settings = next || {};
 					$("source").value = source();
 					$("show-avatar").checked = settings.showAvatar !== false;
-					$("click").value = settings.clickAction === "donation" ? "donation" : "twitch";
+					$("click").value = settings.clickAction || "title";
+					$("long").value = settings.longPressAction || "donation";
 					fillStreamers();
 					fillPreview();
 					window.PI.sendToPlugin({ event: "getCatalogue" });

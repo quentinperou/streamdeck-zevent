@@ -1,7 +1,7 @@
 # ZEvent pour Stream Deck
 
 [![Build](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml/badge.svg)](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-1.2.1-00BD00)](https://github.com/quentinperou/streamdeck-zevent/releases)
+[![Version](https://img.shields.io/badge/version-1.3.0-00BD00)](https://github.com/quentinperou/streamdeck-zevent/releases)
 [![Licence](https://img.shields.io/badge/licence-MIT-00BD00)](LICENSE)
 
 Affiche les cagnottes du [ZEvent](https://zevent.fr/) sur les touches d'un Stream Deck, et ouvre la
@@ -20,15 +20,37 @@ apparaissent ensuite dans la catégorie **ZEvent**.
 
 ## Actions
 
-| Action | Touche | Appui |
-| --- | --- | --- |
-| **Cagnotte streamer** | Pseudo, cagnotte, viewers, avatar en fond | Ouvre `twitch.tv/<pseudo>` (ou la page de don) |
-| **Cagnotte globale** | Total du ZEvent et viewers cumulés | Ouvre la page de don (ou `zevent.fr`) |
-| **Palier de dons** | Avancement vers un palier, en barre de progression | Ouvre `twitch.tv/<pseudo>` (ou la page de don) |
+| Action | Touche |
+| --- | --- |
+| **Cagnotte streamer** | Pseudo, cagnotte, viewers, avatar en fond |
+| **Cagnotte globale** | Total du ZEvent et viewers cumulés |
+| **Palier de dons** | Avancement vers un palier, en barre de progression |
 
 Le bandeau vert en bas de touche signale un stream en direct ; il s'éteint
 lorsque le streamer est hors ligne. Une pastille ambre apparaît si la donnée
 affichée a plus de trois minutes.
+
+### Appui court, appui long
+
+Chaque touche déclenche une action au clic et une autre à l'appui maintenu
+(500 ms). Les deux se règlent séparément, dans la même liste :
+
+| | Cagnotte streamer | Palier de dons |
+| --- | --- | --- |
+| Ouvrir la chaîne Twitch | ✓ | ✓ |
+| Ouvrir la page de don | ✓ | ✓ |
+| Afficher le nom du palier | | ✓ |
+| Ne rien faire | ✓ | ✓ |
+
+L'action longue se déclenche **au seuil**, pas au relâchement : sans cela rien
+n'indiquerait qu'on a assez appuyé, et relâcher plus tôt ne permettrait pas
+d'annuler.
+
+Les libellés de paliers sont des phrases entières — « Je vous offre une maison
+(promis juré !) » — qu'aucune touche ne peut afficher en permanence. Les
+montrer cinq secondes à la demande évite d'ouvrir le Property Inspector pour
+savoir ce qu'on vise. Par défaut, une touche « Palier de dons » affiche ce
+libellé au clic et ouvre la page de don à l'appui long.
 
 ### Format des chiffres
 
