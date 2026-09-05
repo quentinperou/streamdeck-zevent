@@ -10,14 +10,15 @@ import type {
 } from "@elgato/streamdeck";
 
 import { formatAmount, formatViewers, type NumberFormat } from "../format";
+import { ingdoc } from "../ingdoc";
 import { KeyImageCache } from "../key-image";
 import { PressTracker } from "../press";
-import { renderMessageKey, renderStreamerKey } from "../render";
+import { renderMessageKey, renderStreamerGraphKey, renderStreamerKey } from "../render";
 import { safely } from "../safety";
 import { zevent } from "../zevent";
 
 /** Ce qu’un appui déclenche. « none » laisse la touche inerte. */
-export type StreamerPressAction = "twitch" | "donation" | "none";
+export type StreamerPressAction = "twitch" | "donation" | "graph" | "none";
 
 export type StreamerSettings = {
 	login?: string;
@@ -26,9 +27,17 @@ export type StreamerSettings = {
 	numberFormat?: NumberFormat;
 	/** Appui court. */
 	clickAction?: StreamerPressAction;
-	/** Appui long, inerte par défaut pour ne rien changer aux touches existantes. */
+	/** Appui long. */
 	longPressAction?: StreamerPressAction;
 };
+
+/**
+ * Réglages d’une touche fraîchement posée. La courbe est ce qu’on regarde le
+ * plus volontiers d’un coup d’œil ; la chaîne, elle, se passe très bien d’être
+ * à un simple clic.
+ */
+const DEFAULT_CLICK = "graph" as const;
+const DEFAULT_LONG_PRESS = "twitch" as const;
 
 type AnyAction = KeyAction<StreamerSettings> | DialAction<StreamerSettings>;
 
@@ -38,6 +47,11 @@ export class StreamerAction extends SingletonAction<StreamerSettings> {
 	/** Derniers réglages connus de chaque touche, poussés par Stream Deck. */
 	readonly #settings = new Map<string, StreamerSettings>();
 	readonly #presses = new PressTracker();
+	/**
+	 * Touches basculées sur la courbe des dons. L’état vit ici et non dans les
+	 * réglages : c’est un coup d’œil, pas une préférence à conserver.
+	 */
+	readonly #graphing = new Set<string>();
 
 	override async onWillAppear(ev: WillAppearEvent<StreamerSettings>): Promise<void> {
 		zevent.retain();
@@ -53,17 +67,27 @@ export class StreamerAction extends SingletonAction<StreamerSettings> {
 		this.#images.forget(ev.action.id);
 		this.#settings.delete(ev.action.id);
 		this.#presses.forget(ev.action.id);
+		this.#graphing.delete(ev.action.id);
 	}
 
 	override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<StreamerSettings>): Promise<void> {
-		this.#settings.set(ev.action.id, ev.payload.settings);
-		await this.#render(ev.action, ev.payload.settings);
+		const settings = ev.payload.settings;
+		this.#settings.set(ev.action.id, settings);
+
+		// Plus aucun appui ne mène à la courbe : une touche restée dessus n'aurait
+		// plus aucun moyen d'en sortir.
+		const reachable =
+			(settings.clickAction ?? DEFAULT_CLICK) === "graph" ||
+			(settings.longPressAction ?? DEFAULT_LONG_PRESS) === "graph";
+		if (!reachable) this.#graphing.delete(ev.action.id);
+
+		await this.#render(ev.action, settings);
 	}
 
 	override onKeyDown(ev: KeyDownEvent<StreamerSettings>): void {
 		const settings = ev.payload.settings;
 		this.#presses.down(ev.action.id, () => {
-			safely(this.#run(ev.action, settings.longPressAction ?? "none", settings), "appui long");
+			safely(this.#run(ev.action, settings.longPressAction ?? DEFAULT_LONG_PRESS, settings), "appui long");
 		});
 	}
 
@@ -73,7 +97,7 @@ export class StreamerAction extends SingletonAction<StreamerSettings> {
 		if (!this.#presses.up(ev.action.id)) return;
 
 		const settings = ev.payload.settings;
-		await this.#run(ev.action, settings.clickAction ?? "twitch", settings);
+		await this.#run(ev.action, settings.clickAction ?? DEFAULT_CLICK, settings);
 	}
 
 	async #run(
@@ -82,6 +106,15 @@ export class StreamerAction extends SingletonAction<StreamerSettings> {
 		settings: StreamerSettings,
 	): Promise<void> {
 		if (what === "none") return;
+
+		if (what === "graph") {
+			// Bascule : le même appui montre la courbe puis la range.
+			if (this.#graphing.has(target.id)) this.#graphing.delete(target.id);
+			else this.#graphing.add(target.id);
+
+			await this.#render(target, settings);
+			return;
+		}
 
 		const login = settings.login?.trim();
 		if (!login) {
@@ -153,6 +186,27 @@ export class StreamerAction extends SingletonAction<StreamerSettings> {
 				: streamer.online
 					? `${formatViewers(streamer.viewers, format)} viewers`
 					: "hors ligne";
+
+		if (this.#graphing.has(target.id)) {
+			// L'historique ne vient que d'InGDoc. S'il manque, on retombe sur la vue
+			// normale plutôt que d'afficher une courbe vide.
+			const points = await ingdoc.history(streamer.twitchId).catch(() => null);
+			if (points && points.length > 1) {
+				await this.#images.apply(
+					target,
+					renderStreamerGraphKey({
+						name: streamer.display,
+						amount: formatAmount(streamer.donation, streamer.donationText, format),
+						points,
+						caption: viewers,
+						online: streamer.online,
+						avatar,
+						stale: zevent.isStale,
+					}),
+				);
+				return;
+			}
+		}
 
 		await this.#images.apply(
 			target,

@@ -312,6 +312,78 @@ export function renderStreamerKey(options: StreamerKeyOptions): string {
 	return toDataUri(body);
 }
 
+/**
+ * Courbe des dons, dessinée en barres.
+ *
+ * Uniquement des `rect` : `polyline` et `path` passeraient peut-être, mais rien
+ * ne le garantit sur le moteur de Stream Deck, et une courbe qui ne s'affiche
+ * pas ne se voit qu'une fois installée chez l'utilisateur.
+ */
+const GRAPH = { y: 62, height: 56, bars: 54 };
+
+function sparkline(points: number[]): string {
+	if (points.length === 0) return "";
+
+	const max = Math.max(...points);
+	if (max <= 0) return "";
+
+	const count = Math.min(GRAPH.bars, points.length);
+	const step = points.length / count;
+	const slot = CONTENT_WIDTH / count;
+
+	let out = "";
+	for (let index = 0; index < count; index += 1) {
+		const value = points[Math.min(points.length - 1, Math.floor(index * step))]!;
+		// Au moins un pixel : une barre à zéro doit rester visible comme repère.
+		const height = Math.max(1, Math.round((value / max) * GRAPH.height));
+		out +=
+			`<rect x="${(PADDING + index * slot).toFixed(1)}" y="${GRAPH.y + GRAPH.height - height}" ` +
+			`width="${(slot * 0.78).toFixed(1)}" height="${height}" fill="${COLORS.amount}"/>`;
+	}
+	return out;
+}
+
+export type StreamerGraphKeyOptions = {
+	name: string;
+	amount: string;
+	/** Cumul des dons, du début de l'édition à maintenant. */
+	points: number[];
+	caption: string | null;
+	online: boolean;
+	avatar: string | null;
+	stale: boolean;
+};
+
+export function renderStreamerGraphKey(options: StreamerGraphKeyOptions): string {
+	const { name, amount, points, caption, online, avatar, stale } = options;
+
+	const nameSize = fitFontSize(name, CONTENT_WIDTH, 15, 10);
+	const amountSize = fitFontSize(amount, CONTENT_WIDTH, 26, 12);
+
+	let body = background(avatar, 0.84);
+	body += text(truncate(name, CONTENT_WIDTH, nameSize), {
+		y: 24,
+		size: nameSize,
+		fill: online ? COLORS.name : COLORS.nameOffline,
+	});
+	body += text(amount, {
+		y: centeredBaseline(42, amountSize),
+		size: amountSize,
+		fill: COLORS.amount,
+	});
+	body += sparkline(points);
+
+	if (caption) {
+		const size = fitFontSize(caption, CONTENT_WIDTH, 12, 9);
+		body += text(truncate(caption, CONTENT_WIDTH, size), { y: 133, size, fill: COLORS.muted });
+	}
+
+	body += statusBar(online ? COLORS.live : COLORS.offline);
+	if (stale) body += staleDot();
+
+	return toDataUri(body);
+}
+
 export type TotalKeyOptions = {
 	label: string;
 	amount: string;

@@ -13,6 +13,8 @@
  */
 
 const BASE = "https://api.evenmorestats.fr";
+/** Cache S3 des métriques : le seul endroit où vit l’historique. */
+const METRICS = "https://evenmorestats-cache.s3.gra.io.cloud.ovh.net";
 const USER_AGENT = "streamdeck-zevent/1.0 (+https://github.com/quentinperou)";
 
 /** L'édition en cours ne change pas d'un jour à l'autre. */
@@ -21,6 +23,8 @@ const EVENT_TTL_MS = 3_600_000;
 const OVERVIEW_TTL_MS = 300_000;
 /** Les paliers d'un streamer, même cadence que le reste du plugin. */
 const GOALS_TTL_MS = 60_000;
+/** L'historique n'avance que toutes les dix minutes : inutile de le relire plus vite. */
+const HISTORY_TTL_MS = 300_000;
 
 const TIMEOUT_MS = 15_000;
 
@@ -35,6 +39,8 @@ export type IngdocGoal = {
 
 export type IngdocEntry = {
 	participationId: string;
+	/** Distinct de la participation : c’est lui qui indexe les métriques. */
+	streamerId: string;
 	twitchId: string;
 	login: string;
 	display: string;
@@ -56,6 +62,11 @@ type RawOverview = {
 	amount_raised?: number;
 	donation_goals_count?: number;
 	socials?: { twitch?: { id?: string; login?: string } };
+	streamers?: { id?: string }[];
+};
+
+type RawMetrics = {
+	graph?: { donations?: { labels?: number[]; values?: number[] } };
 };
 
 type RawGoal = {
@@ -86,6 +97,7 @@ class IngdocSource {
 	#event: Cached<string> | null = null;
 	#overview: Cached<Map<string, IngdocEntry>> | null = null;
 	#goals = new Map<string, Cached<IngdocGoal[]>>();
+	#history = new Map<string, Cached<number[]>>();
 	#inFlight = new Map<string, Promise<unknown>>();
 
 	/** Déduplique les appels concurrents vers la même ressource. */
@@ -150,6 +162,7 @@ class IngdocSource {
 
 				map.set(twitchId, {
 					participationId: entry.id,
+					streamerId: entry.streamers?.[0]?.id ?? "",
 					twitchId,
 					login: entry.socials?.twitch?.login ?? "",
 					display: entry.name ?? "",
@@ -160,6 +173,48 @@ class IngdocSource {
 
 			this.#overview = { value: map, at: Date.now() };
 			return map;
+		});
+	}
+
+	/**
+	 * Historique des dons d'un streamer, du début de l'édition à maintenant.
+	 *
+	 * Ni le ZEvent ni l'API d'InGDoc ne l'exposent : il vit dans le cache S3
+	 * qu'alimente leur page de statistiques, un point toutes les dix minutes.
+	 * C'est la seule source d'historique connue — sans elle, il faudrait que le
+	 * plugin enregistre lui-même, et repartir de zéro à chaque redémarrage.
+	 */
+	async history(twitchId: string): Promise<number[] | null> {
+		const entry = (await this.overview()).get(twitchId);
+		const streamerId = entry?.streamerId;
+		if (!streamerId) return null;
+
+		const cached = this.#history.get(streamerId);
+		if (cached && Date.now() - cached.at < HISTORY_TTL_MS) return cached.value;
+
+		return this.#once(`history:${streamerId}`, async () => {
+			const id = await this.eventId();
+			const res = await fetch(
+				`${METRICS}/metrics/${encodeURIComponent(id)}/streamers/${encodeURIComponent(streamerId)}.json`,
+				{ headers: { accept: "application/json", "user-agent": USER_AGENT }, signal: AbortSignal.timeout(TIMEOUT_MS) },
+			);
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+			const raw = (await res.json()) as RawMetrics;
+			const serie = raw.graph?.donations;
+			const labels = serie?.labels ?? [];
+			const values = serie?.values ?? [];
+
+			// Les deux séries de ce fichier ne sont pas dans le même ordre : celle
+			// des viewers arrive à l'envers. On trie plutôt que de faire confiance.
+			const points = labels
+				.map((at, index) => ({ at, value: values[index] }))
+				.filter((p): p is { at: number; value: number } => typeof p.value === "number")
+				.sort((a, b) => a.at - b.at)
+				.map((p) => p.value);
+
+			this.#history.set(streamerId, { value: points, at: Date.now() });
+			return points;
 		});
 	}
 

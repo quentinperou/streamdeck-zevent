@@ -135,6 +135,7 @@ débogage — jamais sur `"disabled"`, qui empêche le plugin de démarrer.
 | `https://api.evenmorestats.fr/events` | Éditions, pour résoudre l'année en cours par les dates | ~3 ko |
 | `.../events/<id>/donation_goals/overview` | Décompte des paliers des 338, en un appel | ~244 ko |
 | `.../participations/<pid>/donation_goals` | Paliers d'un streamer chez InGDoc (montants **en centimes**) | ~3 ko |
+| `evenmorestats-cache.s3…/metrics/<ev>/streamers/<id>.json` | Historique des dons, un point toutes les 10 min | ~9 ko |
 
 La liste principale du ZEvent ne contient **pas** les paliers. L'officiel ne les
 expose qu'une fiche à la fois, et en oublie une partie : sur 60 streamers
@@ -144,3 +145,8 @@ InGDoc les a, et son `overview` est la **seule** route qui donne le décompte de
 
 InGDoc est un service communautaire, sans en-tête de cache ni limite de débit
 annoncée : le mode « auto » retombe toujours sur l'officiel s'il ne répond pas.
+
+**L’historique des dons n’existe nulle part ailleurs.** Il vit dans un cache S3,
+pas dans une API documentée — plus fragile encore que le reste d’InGDoc. Et ce
+fichier contient deux séries dont **une seule est chronologique** : celle des
+viewers arrive à l’envers. Trier par horodatage, ne pas se fier à l’ordre reçu.

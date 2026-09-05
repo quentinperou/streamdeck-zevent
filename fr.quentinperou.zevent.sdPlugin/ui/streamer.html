@@ -62,6 +62,7 @@
 				<select id="click">
 					<option value="twitch">Ouvrir la chaîne Twitch</option>
 					<option value="donation">Ouvrir la page de don</option>
+					<option value="graph">Afficher / masquer le graphique</option>
 					<option value="none">Ne rien faire</option>
 				</select>
 			</div>
@@ -74,6 +75,7 @@
 					<option value="none">Ne rien faire</option>
 					<option value="twitch">Ouvrir la chaîne Twitch</option>
 					<option value="donation">Ouvrir la page de don</option>
+					<option value="graph">Afficher / masquer le graphique</option>
 				</select>
 			</div>
 		</div>
@@ -317,8 +319,8 @@
 					$("show-avatar").checked = settings.showAvatar !== false;
 					$("show-viewers").checked = settings.showViewers !== false;
 					$("format").value = settings.numberFormat === "short" ? "short" : "full";
-					$("click").value = settings.clickAction || "twitch";
-					$("long").value = settings.longPressAction || "none";
+					$("click").value = settings.clickAction || "graph";
+					$("long").value = settings.longPressAction || "twitch";
 					fillSelect();
 					fillPreview();
 					window.PI.sendToPlugin({ event: "getCatalogue" });
