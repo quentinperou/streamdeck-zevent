@@ -10,14 +10,30 @@
 const API_URL = "https://zevent.fr/api/";
 const USER_AGENT = "streamdeck-zevent/1.0 (+https://github.com/quentinperou)";
 
-/** Cadence nominale du rafraîchissement, tant qu'au moins une touche est visible. */
-const POLL_INTERVAL_MS = 20_000;
-/** Garde-fou : jamais deux appels sortants rapprochés, même sur demande manuelle. */
-const MIN_REFRESH_MS = 8_000;
+/**
+ * Cadence nominale, tant qu'au moins une touche est visible.
+ *
+ * La réponse du ZEvent pèse 157 ko — la liste complète des participants, dont
+ * une touche n'utilise qu'une ligne. C'est ce poids, et non la charge serveur,
+ * qui fixe la cadence : le ZEvent sert cette route depuis le cache Cloudflare,
+ * nos appels n'atteignent jamais son origine. Une minute ramène le trafic à
+ * ~9 Mo par heure et par utilisateur, contre ~28 Mo toutes les 20 secondes,
+ * pour une information d'ambiance dont personne ne verra le retard.
+ */
+const POLL_INTERVAL_MS = 60_000;
+/**
+ * Garde-fou : jamais deux appels sortants rapprochés, demande manuelle comprise.
+ * Calé sur le `max-age=15` que le ZEvent déclare lui-même — en deçà, on
+ * retéléchargerait mot pour mot la réponse déjà servie par le cache.
+ */
+const MIN_REFRESH_MS = 15_000;
 /** Plafond du recul exponentiel quand le ZEvent ne répond plus. */
 const MAX_BACKOFF_MS = 300_000;
-/** Au-delà, la donnée affichée est signalée comme périmée. */
-const STALE_AFTER_MS = 120_000;
+/**
+ * Au-delà, la donnée affichée est signalée comme périmée. Trois minutes, soit
+ * deux cycles manqués : un incident passager ne doit pas allumer le témoin.
+ */
+const STALE_AFTER_MS = 180_000;
 
 /** Un avatar qui n'a pas pu être chargé n'est pas réessayé avant ce délai. */
 const AVATAR_RETRY_MS = 300_000;
@@ -143,9 +159,15 @@ class ZeventStore {
 		}
 	}
 
-	async refresh(force = false): Promise<void> {
+	/**
+	 * Le garde-fou s'applique à tout le monde, y compris au bouton « Rafraîchir »
+	 * du Property Inspector : sans quoi un clic répété relancerait un
+	 * téléchargement de 157 ko toutes les trois secondes. L'appel programmé, lui,
+	 * arrive toujours bien après le délai minimal et n'est jamais bloqué.
+	 */
+	async refresh(): Promise<void> {
 		if (this.#inFlight) return this.#inFlight;
-		if (!force && Date.now() - this.#fetchedAt < MIN_REFRESH_MS) return;
+		if (Date.now() - this.#fetchedAt < MIN_REFRESH_MS) return;
 
 		this.#inFlight = this.#load().finally(() => {
 			this.#inFlight = null;
@@ -222,7 +244,7 @@ class ZeventStore {
 				: Math.min(MAX_BACKOFF_MS, POLL_INTERVAL_MS * 2 ** this.#failures);
 
 		this.#timer = setTimeout(() => {
-			void this.refresh(true).finally(() => this.#schedule());
+			void this.refresh().finally(() => this.#schedule());
 		}, delay);
 		this.#timer.unref?.();
 	}

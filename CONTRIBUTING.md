@@ -68,12 +68,21 @@ README. La CI refuse toute divergence.
 
 Quelques contraintes ne se devinent pas à la lecture.
 
-**Ménagez les serveurs du ZEvent.** Une seule requête sortante alimente toutes
-les touches, toutes les 20 secondes, et seulement tant qu'une touche du plugin
-est visible. N'accélérez pas cette cadence : le plugin peut tourner sur des
-milliers de machines pendant l'événement, et le ZEvent a mieux à faire que
-d'absorber notre trafic. `MIN_REFRESH_MS` empêche par ailleurs deux appels
-rapprochés, même déclenchés à la main.
+**N'accélérez pas la cadence.** Une seule requête sortante alimente toutes les
+touches, une fois par minute, et seulement tant qu'une touche du plugin est
+visible.
+
+Ce n'est pas la charge serveur qui commande : le ZEvent sert cette route depuis
+le cache Cloudflare, nos appels n'atteignent jamais son origine. C'est le poids
+de la réponse — **157 ko**, la liste complète des participants alors qu'une
+touche n'en lit qu'une ligne. À une minute, cela représente environ 9 Mo par
+heure et par utilisateur ; à 20 secondes, 28 Mo. Multipliez par le nombre de
+personnes qui font tourner le plugin pendant l'événement.
+
+`MIN_REFRESH_MS` interdit par ailleurs deux appels à moins de 15 secondes
+d'intervalle, bouton *Rafraîchir* compris. Cette valeur n'est pas arbitraire :
+c'est le `max-age=15` que le ZEvent déclare dans ses en-têtes. En deçà, on
+retéléchargerait mot pour mot une réponse déjà servie par le cache.
 
 **Le Property Inspector ne peut pas appeler l'API.** C'est une page web, et
 `zevent.fr/api/` n'émet aucun en-tête CORS. Toute donnée qu'il affiche doit

@@ -29,7 +29,7 @@ streamDeck.ui.onDidAppear(async () => {
 streamDeck.ui.onSendToPlugin(async (ev) => {
 	const payload = ev.payload as { event?: string } | null;
 	if (payload?.event === "refresh") {
-		await zevent.refresh(true);
+		await zevent.refresh();
 	}
 	await sendCatalogue();
 });

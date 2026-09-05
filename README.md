@@ -23,7 +23,7 @@ apparaissent ensuite dans la catégorie **ZEvent**.
 
 Le bandeau vert en bas de touche signale un stream en direct ; il s'éteint
 lorsque le streamer est hors ligne. Une pastille ambre apparaît si la donnée
-affichée a plus de deux minutes.
+affichée a plus de trois minutes.
 
 ### Format des chiffres
 
@@ -66,11 +66,21 @@ qu'utilise le site lui-même. Elle n'émet aucun en-tête CORS : un Property
 Inspector, qui est une page web, ne peut pas l'appeler. C'est donc le plugin
 Node qui interroge le ZEvent et pousse le catalogue vers l'interface.
 
-Une seule requête sortante alimente toutes les touches, toutes les 20 secondes
-et seulement tant qu'une touche du plugin est visible. En cas de panne, le
-dernier état connu reste affiché et les tentatives s'espacent progressivement
-(jusqu'à 5 minutes). Les avatars sont récupérés en 70×70 — la variante que
-Twitch expose déjà — et gardés en mémoire.
+Une seule requête sortante alimente toutes les touches, une fois par minute et
+seulement tant qu'une touche du plugin est visible. La réponse pèse 157 ko — la
+liste complète des participants, dont une touche n'utilise qu'une ligne : c'est
+ce poids qui fixe la cadence, pas la charge serveur, le ZEvent servant cette
+route depuis un cache Cloudflare. Une minute représente environ 9 Mo par heure,
+contre 28 Mo si l'on interrogeait l'API toutes les 20 secondes.
+
+Aucun appel ne part à moins de 15 secondes du précédent, bouton *Rafraîchir*
+compris : c'est la durée de validité que le ZEvent déclare lui-même
+(`cache-control: max-age=15`), en deçà on retéléchargerait à l'identique une
+réponse déjà servie.
+
+En cas de panne, le dernier état connu reste affiché et les tentatives
+s'espacent progressivement (jusqu'à 5 minutes). Les avatars sont récupérés en
+70×70 — la variante que Twitch expose déjà — et gardés en mémoire.
 
 ## Développement
 
