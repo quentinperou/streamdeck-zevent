@@ -31,6 +31,7 @@ Avant de proposer quoi que ce soit : `sync-version -- --check`, `typecheck`,
 | --- | --- |
 | `src/plugin.ts` | Enregistrement des actions, abonnement au store, ponts vers le Property Inspector |
 | `src/zevent.ts` | Accès unique à l'API, cadence, cache des avatars |
+| `src/goals.ts` | Paliers de dons, fiche par fiche, seulement pour les streamers affichés |
 | `src/render.ts` | Visuels de touche en SVG |
 | `src/format.ts` | Nombres complets ou abrégés |
 | `src/key-image.ts` | Évite de réenvoyer une image identique |
@@ -74,9 +75,10 @@ resterait vide.
 
 ## Conventions
 
-- Prose du dépôt en français : README, CONTRIBUTING, commentaires, interface.
-- Messages de commit en anglais, format Conventional Commits, avec un corps qui
-  dit *pourquoi*.
+- Tout est en français : README, CONTRIBUTING, commentaires, interface, et les
+  messages de commit.
+- Commits au format Conventional Commits (`feat:`, `fix:`, `docs:`…), avec un
+  corps qui dit *pourquoi*.
 - Commentaires qui expliquent le pourquoi, jamais la paraphrase du code.
 - TypeScript strict, tabulations, pas de `any`.
 

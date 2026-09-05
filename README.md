@@ -1,7 +1,7 @@
 # ZEvent pour Stream Deck
 
 [![Build](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml/badge.svg)](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-1.0.1-00BD00)](https://github.com/quentinperou/streamdeck-zevent/releases)
+[![Version](https://img.shields.io/badge/version-1.1.0-00BD00)](https://github.com/quentinperou/streamdeck-zevent/releases)
 [![Licence](https://img.shields.io/badge/licence-MIT-00BD00)](LICENSE)
 
 Affiche les cagnottes du [ZEvent](https://zevent.fr/) sur les touches d'un Stream Deck, et ouvre la
@@ -22,6 +22,7 @@ apparaissent ensuite dans la catégorie **ZEvent**.
 | --- | --- | --- |
 | **Cagnotte streamer** | Pseudo, cagnotte, viewers, avatar en fond | Ouvre `twitch.tv/<pseudo>` (ou la page de don) |
 | **Cagnotte globale** | Total du ZEvent et viewers cumulés | Ouvre la page de don (ou `zevent.fr`) |
+| **Palier de dons** | Avancement vers un palier, en barre de progression | Ouvre `twitch.tv/<pseudo>` (ou la page de don) |
 
 Le bandeau vert en bas de touche signale un stream en direct ; il s'éteint
 lorsque le streamer est hors ligne. Une pastille ambre apparaît si la donnée
@@ -40,6 +41,21 @@ Deux décimales sous 10, une au-delà — `1.25M` d'un côté, `800.8K` de l'aut
 et les zéros inutiles disparaissent (`1.00M` s'écrit `1M`). Une touche fait
 72 pixels : moins de caractères, c'est une police plus grande et un montant
 lisible d'un coup d'œil, au prix de la précision.
+
+### Paliers de dons
+
+L'action **Palier de dons** montre où en est un streamer sur l'un de ses
+paliers : pourcentage, barre de progression, rang et montant visé. Le Property
+Inspector propose soit **le prochain palier à atteindre** — la touche avance
+alors toute seule d'un palier au suivant — soit un palier précis choisi dans la
+liste, les paliers déjà tombés étant marqués d'une coche.
+
+L'avancement se mesure **depuis le palier précédent**, pas depuis le premier
+euro : à 40 000 € pour un palier à 50 000 € qui suit celui de 40 000 €, la
+barre affiche 0 % et non 80 %. C'est l'effort restant qui intéresse.
+
+Tous les participants n'en configurent pas — la touche le dit alors clairement
+plutôt que d'afficher une barre vide.
 
 ## Couleurs
 
@@ -87,6 +103,10 @@ réponse déjà servie.
 En cas de panne, le dernier état connu reste affiché et les tentatives
 s'espacent progressivement (jusqu'à 5 minutes). Les avatars sont récupérés en
 70×70 — la variante que Twitch expose déjà — et gardés en mémoire.
+
+Les **paliers** n'y figurent pas : ils vivent sur `api.zevent.fr/streamer/<id>`,
+une fiche à la fois. Le plugin n'interroge que les streamers réellement posés
+sur une touche « palier », jamais les 338 — chaque fiche ne pèse que 2 ko.
 
 ## Développement
 

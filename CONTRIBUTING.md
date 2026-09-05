@@ -56,9 +56,10 @@ Les commentaires expliquent *pourquoi* le code est ainsi, pas ce qu'il fait :
 une ligne qui se lit seule n'a pas besoin d'être paraphrasée, une contrainte
 non évidente mérite d'être écrite.
 
-**Commits.** Format [Conventional Commits](https://www.conventionalcommits.org)
-(`feat:`, `fix:`, `docs:`, `refactor:`, `chore:`). Le corps du message dit
-pourquoi le changement a été fait.
+**Commits.** En français, comme le reste du projet. Format
+[Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`,
+`docs:`, `refactor:`, `chore:`). Le corps du message dit pourquoi le changement
+a été fait.
 
 **Versions.** Ne modifiez pas `manifest.json` à la main : `npm version patch`
 propage la version depuis `package.json` vers le manifest et le badge du

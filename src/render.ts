@@ -40,6 +40,8 @@ const COLORS = {
 	/** Le bandeau est un aplat : il garde le vert de marque. */
 	live: "#00BD00",
 	offline: "#242424",
+	/** Rail de la barre de progression : lisible sur le fond sans le concurrencer. */
+	track: "#2E2E2E",
 	stale: "#F0A020",
 };
 
@@ -241,6 +243,72 @@ export function renderTotalKey(options: TotalKeyOptions): string {
 		});
 	}
 	body += statusBar(COLORS.live);
+	if (stale) body += staleDot();
+
+	return toDataUri(body);
+}
+
+const BAR = { x: 10, y: 84, width: SIZE - 20, height: 12, radius: 3 };
+
+/**
+ * Barre de progression. Deux rectangles, pas de dégradé ni de masque : c'est
+ * tout ce que le moteur de Stream Deck rend de façon fiable.
+ */
+function progressBar(fraction: number): string {
+	const clamped = Math.max(0, Math.min(1, fraction));
+	const filled = Math.round(BAR.width * clamped);
+
+	let out =
+		`<rect x="${BAR.x}" y="${BAR.y}" width="${BAR.width}" height="${BAR.height}" ` +
+		`rx="${BAR.radius}" fill="${COLORS.track}"/>`;
+	if (filled > 0) {
+		out +=
+			`<rect x="${BAR.x}" y="${BAR.y}" width="${filled}" height="${BAR.height}" ` +
+			`rx="${BAR.radius}" fill="${COLORS.amount}"/>`;
+	}
+	return out;
+}
+
+export type GoalKeyOptions = {
+	name: string;
+	/** Avancement vers le palier, de 0 à 1. */
+	fraction: number;
+	/** Ce qui est écrit en grand : un pourcentage, ou l'état si tout est atteint. */
+	headline: string;
+	/** Ligne du bas : le montant du palier visé. */
+	target: string | null;
+	online: boolean;
+	avatar: string | null;
+	stale: boolean;
+};
+
+export function renderGoalKey(options: GoalKeyOptions): string {
+	const { name, fraction, headline, target, online, avatar, stale } = options;
+
+	const nameSize = fitFontSize(name, CONTENT_WIDTH, 15, 10);
+	const headlineSize = fitFontSize(headline, CONTENT_WIDTH, 34, 13);
+
+	let body = background(avatar);
+	body += text(truncate(name, CONTENT_WIDTH, nameSize), {
+		y: 24,
+		size: nameSize,
+		fill: online ? COLORS.name : COLORS.nameOffline,
+	});
+	body += text(headline, {
+		y: centeredBaseline(56, headlineSize),
+		size: headlineSize,
+		fill: COLORS.amount,
+	});
+	body += progressBar(fraction);
+	if (target) {
+		const size = fitFontSize(target, CONTENT_WIDTH, 14, 10);
+		body += text(truncate(target, CONTENT_WIDTH, size), {
+			y: 121,
+			size,
+			fill: COLORS.muted,
+		});
+	}
+	body += statusBar(online ? COLORS.live : COLORS.offline);
 	if (stale) body += staleDot();
 
 	return toDataUri(body);

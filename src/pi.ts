@@ -1,7 +1,32 @@
 import streamDeck from "@elgato/streamdeck";
 
 import { abbreviate, groupDigits } from "./format";
+import { goals } from "./goals";
 import { zevent } from "./zevent";
+
+/**
+ * Paliers d'un streamer, pour que le Property Inspector puisse les proposer.
+ * Ils vivent sur un autre endpoint que la liste, d'où cet envoi séparé.
+ */
+export async function sendGoals(twitchId: string): Promise<void> {
+	if (!streamDeck.ui.action) return;
+
+	const data = await goals.preload(twitchId);
+	if (!streamDeck.ui.action) return;
+
+	await streamDeck.ui.sendToPropertyInspector({
+		event: "goals",
+		twitchId,
+		found: data !== null,
+		donation: data?.donationText ?? null,
+		goals: (data?.goals ?? []).map((goal, index) => ({
+			index,
+			title: goal.title,
+			amount: goal.amountText,
+			reached: goal.reached,
+		})),
+	});
+}
 
 /**
  * Le Property Inspector est une page web : l'API du ZEvent, dépourvue d'en-têtes
@@ -31,6 +56,9 @@ export async function sendCatalogue(): Promise<void> {
 		},
 		streamers: zevent.streamers.map((streamer) => ({
 			login: streamer.login,
+			// L'action « palier » en a besoin : les paliers se récupèrent par
+			// identifiant Twitch, sur un endpoint distinct de la liste.
+			twitchId: streamer.twitchId,
 			display: streamer.display,
 			avatar: streamer.avatarUrl,
 			donation: streamer.donationText,

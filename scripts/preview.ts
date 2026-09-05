@@ -3,7 +3,8 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { formatAmount, formatViewers, type NumberFormat } from "../src/format";
-import { renderMessageKey, renderStreamerKey, renderTotalKey } from "../src/render";
+import { goals, pickGoal, progressToward } from "../src/goals";
+import { renderGoalKey, renderMessageKey, renderStreamerKey, renderTotalKey } from "../src/render";
 import { zevent } from "../src/zevent";
 
 const OUT = process.argv[2] ?? ".";
@@ -71,6 +72,41 @@ async function main(): Promise<void> {
 	}
 	write("key-empty", renderMessageKey("Choisir un streamer"));
 	write("key-error", renderMessageKey("ZEvent injoignable", "warning"));
+
+	// Paliers : un endpoint distinct, une fiche par streamer. Beaucoup de
+	// participants n'en configurent aucun, d'où le sondage jusqu'à en trouver.
+	let rendus = 0;
+	for (const streamer of zevent.streamers.slice(0, 10)) {
+		if (rendus >= 3) break;
+
+		const data = await goals.preload(streamer.twitchId);
+		if (!data || data.goals.length === 0) {
+			console.log(`  ${streamer.display.padEnd(20)} aucun palier`);
+			continue;
+		}
+		rendus += 1;
+
+		const goal = pickGoal(data, "next");
+		const fraction = goal ? progressToward(data, goal) : 1;
+		console.log(
+			`  ${streamer.display.padEnd(20)} palier ${goal ? `${data.goals.indexOf(goal) + 1}/${data.goals.length} ${goal.amountText}` : "tous atteints"}  ${Math.floor(fraction * 100)}%`,
+		);
+
+		write(
+			`goal-${streamer.login}`,
+			renderGoalKey({
+				name: streamer.display,
+				fraction,
+				headline: `${Math.floor(fraction * 100)} %`,
+				target: goal
+					? `${data.goals.indexOf(goal) + 1}/${data.goals.length} · ${goal.amountText}`
+					: "tous atteints",
+				online: streamer.online,
+				avatar: await zevent.avatar(streamer.login),
+				stale: false,
+			}),
+		);
+	}
 }
 
 void main();

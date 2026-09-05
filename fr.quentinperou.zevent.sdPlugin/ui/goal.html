@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8" />
+		<title>Palier de dons</title>
+		<link rel="stylesheet" href="css/pi.css" />
+	</head>
+	<body>
+		<div class="row">
+			<label for="search">Recherche</label>
+			<div class="field">
+				<input id="search" type="search" placeholder="Nom du streamer…" autocomplete="off" spellcheck="false" />
+			</div>
+		</div>
+
+		<div class="row">
+			<label for="streamer">Streamer</label>
+			<div class="field">
+				<select id="streamer" disabled>
+					<option value="">Chargement…</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="row">
+			<label for="goal">Palier</label>
+			<div class="field">
+				<select id="goal" disabled>
+					<option value="next">Prochain palier à atteindre</option>
+				</select>
+			</div>
+		</div>
+
+		<div id="preview" class="preview empty">Aucun streamer sélectionné</div>
+
+		<hr />
+
+		<div class="row">
+			<label>Affichage</label>
+			<div class="field checks">
+				<label class="check"><input id="show-avatar" type="checkbox" checked /> Avatar en fond</label>
+			</div>
+		</div>
+
+		<div class="row">
+			<label for="click">Au clic</label>
+			<div class="field">
+				<select id="click">
+					<option value="twitch">Ouvrir la chaîne Twitch</option>
+					<option value="donation">Ouvrir la page de don</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="footer">
+			<button id="refresh" type="button">↺ Rafraîchir</button>
+			<div id="status" class="status"></div>
+		</div>
+
+		<script src="js/sd-pi.js"></script>
+		<script>
+			(function () {
+				"use strict";
+
+				var $ = function (id) {
+					return document.getElementById(id);
+				};
+
+				var catalogue = [];
+				var settings = {};
+				var paliers = null;
+				var loaded = false;
+
+				/** Recherche insensible à la casse et aux accents. */
+				function fold(text) {
+					return String(text || "")
+						.normalize("NFD")
+						.replace(/[̀-ͯ]/g, "")
+						.toLowerCase();
+				}
+
+				function find(login) {
+					for (var i = 0; i < catalogue.length; i++) {
+						if (catalogue[i].login === login) return catalogue[i];
+					}
+					return null;
+				}
+
+				function fillStreamers() {
+					var select = $("streamer");
+					var query = fold($("search").value.trim());
+					var matches = catalogue.filter(function (streamer) {
+						if (!query) return true;
+						return fold(streamer.display).indexOf(query) !== -1 || streamer.login.indexOf(query) !== -1;
+					});
+
+					select.innerHTML = "";
+
+					var placeholder = document.createElement("option");
+					placeholder.value = "";
+					placeholder.textContent = catalogue.length
+						? matches.length
+							? "— Choisir un streamer —"
+							: "Aucun résultat"
+						: "Chargement…";
+					select.appendChild(placeholder);
+
+					// Le choix courant reste proposé même si la recherche l'exclut.
+					var current = settings.login || "";
+					var listed = matches.some(function (s) {
+						return s.login === current;
+					});
+					if (current && !listed) {
+						var kept = find(current);
+						var option = document.createElement("option");
+						option.value = current;
+						option.textContent = kept
+							? kept.display + " (sélection)"
+							: current + " (hors ZEvent)";
+						select.appendChild(option);
+					}
+
+					matches.forEach(function (streamer) {
+						var option = document.createElement("option");
+						option.value = streamer.login;
+						option.textContent = (streamer.online ? "🟢 " : "") + streamer.display;
+						select.appendChild(option);
+					});
+
+					select.value = current;
+					select.disabled = catalogue.length === 0;
+				}
+
+				function fillGoals() {
+					var select = $("goal");
+					select.innerHTML = "";
+
+					var auto = document.createElement("option");
+					auto.value = "next";
+					auto.textContent = "Prochain palier à atteindre";
+					select.appendChild(auto);
+
+					var liste = (paliers && paliers.goals) || [];
+					liste.forEach(function (goal) {
+						var option = document.createElement("option");
+						option.value = String(goal.index);
+						// Le titre d'un palier est une phrase entière : tronqué ici, il
+						// reste reconnaissable sans étirer la liste déroulante.
+						var titre = goal.title.length > 46 ? goal.title.slice(0, 45) + "…" : goal.title;
+						option.textContent =
+							(goal.reached ? "✓ " : "") + goal.amount + " — " + titre;
+						select.appendChild(option);
+					});
+
+					var choix = settings.goalIndex;
+					select.value = choix === undefined || choix === "next" ? "next" : String(choix);
+					if (!select.value) select.value = "next";
+					select.disabled = liste.length === 0;
+				}
+
+				function fillPreview() {
+					var preview = $("preview");
+
+					if (!settings.login) {
+						preview.className = "preview empty";
+						preview.textContent = "Aucun streamer sélectionné";
+						return;
+					}
+					if (!paliers) {
+						preview.className = "preview empty";
+						preview.textContent = loaded ? "Chargement des paliers…" : "Chargement…";
+						return;
+					}
+					if (!paliers.found || paliers.goals.length === 0) {
+						preview.className = "preview empty";
+						preview.textContent = "Ce streamer n'a pas de palier";
+						return;
+					}
+
+					var liste = paliers.goals;
+					var choix = settings.goalIndex;
+					var goal = null;
+					if (choix === undefined || choix === "next") {
+						for (var i = 0; i < liste.length; i++) {
+							if (!liste[i].reached) {
+								goal = liste[i];
+								break;
+							}
+						}
+					} else {
+						goal = liste[Number(choix)] || null;
+					}
+
+					var streamer = find(settings.login);
+					preview.className = "preview";
+					preview.innerHTML = "";
+
+					var info = document.createElement("div");
+					info.className = "info";
+
+					var name = document.createElement("div");
+					name.className = "name";
+					name.textContent = streamer ? streamer.display : settings.login;
+
+					var amount = document.createElement("div");
+					amount.className = "amount";
+					amount.textContent = goal ? goal.amount : "Tous les paliers atteints";
+
+					var meta = document.createElement("div");
+					meta.className = "meta";
+					meta.textContent = goal
+						? goal.title.length > 60
+							? goal.title.slice(0, 59) + "…"
+							: goal.title
+						: liste.length + " paliers";
+
+					info.appendChild(name);
+					info.appendChild(amount);
+					info.appendChild(meta);
+					preview.appendChild(info);
+				}
+
+				function save() {
+					window.PI.setSettings(settings);
+				}
+
+				function askGoals() {
+					paliers = null;
+					fillGoals();
+					fillPreview();
+					if (settings.twitchId) {
+						window.PI.sendToPlugin({ event: "getGoals", twitchId: settings.twitchId });
+					}
+				}
+
+				$("search").addEventListener("input", fillStreamers);
+
+				$("streamer").addEventListener("change", function () {
+					var login = $("streamer").value;
+					var streamer = find(login);
+					settings.login = login;
+					settings.twitchId = streamer ? streamer.twitchId : undefined;
+					// Les rangs ne se correspondent pas d'un streamer à l'autre : on
+					// repart du palier automatique plutôt que de pointer n'importe où.
+					settings.goalIndex = "next";
+					save();
+					askGoals();
+				});
+
+				$("goal").addEventListener("change", function () {
+					var valeur = $("goal").value;
+					settings.goalIndex = valeur === "next" ? "next" : Number(valeur);
+					save();
+					fillPreview();
+				});
+
+				$("show-avatar").addEventListener("change", function () {
+					settings.showAvatar = $("show-avatar").checked;
+					save();
+				});
+
+				$("click").addEventListener("change", function () {
+					settings.clickAction = $("click").value;
+					save();
+				});
+
+				$("refresh").addEventListener("click", function () {
+					$("refresh").disabled = true;
+					window.PI.sendToPlugin({ event: "refresh" });
+					if (settings.twitchId) {
+						window.PI.sendToPlugin({ event: "getGoals", twitchId: settings.twitchId });
+					}
+					setTimeout(function () {
+						$("refresh").disabled = false;
+					}, 3000);
+				});
+
+				window.PI.onSettings = function (next) {
+					settings = next || {};
+					$("show-avatar").checked = settings.showAvatar !== false;
+					$("click").value = settings.clickAction === "donation" ? "donation" : "twitch";
+					fillStreamers();
+					fillPreview();
+					window.PI.sendToPlugin({ event: "getCatalogue" });
+					if (settings.twitchId) {
+						window.PI.sendToPlugin({ event: "getGoals", twitchId: settings.twitchId });
+					}
+				};
+
+				window.PI.on("catalogue", function (payload) {
+					catalogue = payload.streamers || [];
+					loaded = Boolean(payload.ready);
+					$("refresh").disabled = false;
+					fillStreamers();
+					fillPreview();
+
+					var status = $("status");
+					status.className = payload.stale ? "status error" : "status";
+					status.textContent = catalogue.length ? catalogue.length + " streamers" : "";
+				});
+
+				window.PI.on("goals", function (payload) {
+					// Une réponse pour un autre streamer est périmée : l'utilisateur a
+					// changé d'avis pendant l'aller-retour.
+					if (payload.twitchId !== settings.twitchId) return;
+
+					paliers = payload;
+					fillGoals();
+					fillPreview();
+					if (payload.found) {
+						$("status").textContent = payload.goals.length + " paliers · " + payload.donation;
+					}
+				});
+			})();
+		</script>
+	</body>
+</html>

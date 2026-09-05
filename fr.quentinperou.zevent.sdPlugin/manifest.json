@@ -1,6 +1,6 @@
 {
 	"Name": "ZEvent",
-	"Version": "1.0.1.0",
+	"Version": "1.1.0.0",
 	"Author": "QuentinPerou",
 	"Description": "Affiche les cagnottes du ZEvent sur vos touches et ouvre la chaîne Twitch du streamer d'un simple appui.",
 	"Category": "ZEvent",
@@ -47,6 +47,25 @@
 				}
 			],
 			"PropertyInspectorPath": "ui/total.html"
+		},
+		{
+			"Icon": "imgs/actions/goal/action-icon",
+			"Name": "Palier de dons",
+			"UUID": "fr.quentinperou.zevent.goal",
+			"Tooltip": "Avancement d'un streamer vers un palier de dons. Appui : ouvre sa chaîne Twitch.",
+			"SupportedInMultiActions": false,
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/actions/goal/key",
+					"Name": "Default",
+					"Title": "",
+					"TitleAlignment": "middle"
+				}
+			],
+			"PropertyInspectorPath": "ui/goal.html"
 		}
 	],
 	"SDKVersion": 2,
