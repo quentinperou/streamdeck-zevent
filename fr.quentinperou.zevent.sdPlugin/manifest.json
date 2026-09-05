@@ -1,6 +1,6 @@
 {
 	"Name": "ZEvent",
-	"Version": "1.6.0.0",
+	"Version": "1.6.1.0",
 	"Author": "QuentinPerou",
 	"Description": "Suivez le ZEvent sur vos touches Stream Deck : la cagnotte de chaque streamer, le total de l'événement et la progression vers les paliers de dons, actualisés en continu. Un appui ouvre la chaîne Twitch du streamer.",
 	"Category": "ZEvent",

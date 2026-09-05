@@ -97,29 +97,29 @@ depuis `willAppear` et `didReceiveSettings`, que Stream Deck pousse déjà.
 plantage, le faux hôte doit aussi envoyer les `willAppear` : sans eux, tout le
 code de rendu reste inexploré.
 
-**Un temps fort se mesure en part du flux, jamais en débit brut.** Une première
-version comparait chaque streamer à son propre débit passé : elle encadrait
-14,5 touches sur 340 en permanence. La raison tient en une phrase — quand le
-ZEvent entier s'emballe, tout le monde monte ensemble, et *tout le monde*
-s'allume. Ramener le débit à la part du flux global annule la vague. Ne pas
-revenir en arrière là-dessus.
+**Un temps fort, c'est la durée avant tout.** Deux relevés consécutifs
+au-dessus du seuil, c'est le facteur le plus lourd de la détection : sans lui,
+14,5 touches sur 340 encadrées en permanence, avec lui moins d'une. Attention,
+la référence doit être **figée au début de la rafale** : sinon son premier
+relevé entre dans la moyenne, relève le seuil, et le deuxième échoue toujours
+— aucune rafale ne tient alors deux relevés. Le piège est invisible sur des
+séries régulières et n'apparaît qu'au test.
 
-**Et il faut une rafale soutenue.** Deux relevés consécutifs, c'est le facteur le
-plus lourd : sur les mêmes relevés, 101 déclenchements sans, 11 avec. Attention,
-la référence doit être **figée au début de la rafale** : sinon son premier relevé
-entre dans la moyenne, relève le seuil, et le deuxième échoue toujours — aucune
-rafale ne tient alors deux relevés. Le piège est invisible sur des séries
-régulières et n'apparaît qu'au test.
+**Ne pas réintroduire la part du flux global.** Elle a été essayée, pour qu'une
+vague soulevant tout le ZEvent ne compte pas comme un exploit personnel. Mais
+la durée s'en charge déjà, et la part a un défaut propre : **elle monte toute
+seule quand le flux global baisse**, si bien qu'un streamer à son rythme
+habituel s'allumait pendant que le ZEvent ralentissait. Sur les mêmes relevés,
+la part encadre moitié plus de touches que les euros bruts. Le raisonnement qui
+l'avait fait adopter comparait « part sans durée » à « part avec durée », sans
+jamais tester « euros avec durée » — l'erreur classique de ne pas isoler la
+variable.
 
-**Le rythme de référence est un débit, pas une hausse.** Le plugin ne sonde que
-si une touche est visible : au réveil, l'écart entre deux relevés couvre parfois
-des heures, et la hausse accumulée n'a plus rien d'un pic. `spike.ts` travaille
-donc en euros par minute, ignore les intervalles hors de [30 s, 5 min] et repart
-de zéro au-delà. Il ignore aussi les relevés où le total global n'a pas bougé :
-le ZEvent ne rafraîchit ses montants qu'environ toutes les minutes, et ces
-zéros-là tireraient toutes les références vers le bas. Le cadre s'éteint au
-premier redessin qui suit son échéance, donc jusqu'à une minute plus tard :
-c'est volontaire, un minuteur par touche coûterait plus que ce qu'il apporte.
+**Un état exceptionnel qui dure devient la normale du streamer, et c'est
+voulu.** Mastu a tenu 60 à 96 % du flux du ZEvent une soirée entière sans
+déclencher : sa moyenne personnelle avait monté avec lui. Un seuil de
+domination absolu a été implémenté puis retiré — il répondait à une autre
+question que celle posée, qui est la croissance d'un streamer, pas son poids.
 
 **Calibrer sur la granularité de production, pas sur celle qui est commode.** La
 première version tirait ses seuils de l'historique InGDoc, en pas de 10 minutes,

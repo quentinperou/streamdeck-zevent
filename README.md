@@ -1,7 +1,7 @@
 # ZEvent pour Stream Deck
 
 [![Build](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml/badge.svg)](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-1.6.0-00BD00)](https://github.com/quentinperou/streamdeck-zevent/releases)
+[![Version](https://img.shields.io/badge/version-1.6.1-00BD00)](https://github.com/quentinperou/streamdeck-zevent/releases)
 [![Licence](https://img.shields.io/badge/licence-MIT-00BD00)](LICENSE)
 
 Affiche les cagnottes du [ZEvent](https://zevent.fr/) sur les touches d'un Stream Deck, et ouvre la
@@ -95,30 +95,33 @@ lettre et demie par ligne : avec lui, `mistermv` et `Anyme023` se tronquaient.
 
 ### Temps forts
 
-Quand un streamer prend nettement plus que sa part habituelle des dons, sa
-touche s'entoure d'un **cadre blanc** et annonce la hausse cumulée du moment. Le
-cadre s'efface de lui-même trois minutes après le dernier relevé qualifiant.
+Quand un streamer reçoit **cinq fois son rythme des vingt dernières minutes,
+deux relevés de suite**, sa touche s'entoure d'un **cadre blanc** et annonce la
+hausse cumulée du moment. Le cadre s'efface de lui-même trois minutes après le
+dernier relevé qualifiant.
 
-Deux conditions, et il a fallu les relevés d'une vraie soirée pour les trouver :
+C'est la **durée** qui fait tout le travail, et il a fallu rejouer de vraies
+soirées pour s'en convaincre : une première version sans elle encadrait
+14,5 touches sur 340 en permanence. Une minute isolée au-dessus du seuil, c'est
+une grosse donation ; un temps fort, ça dure.
 
-- **La part du flux, pas le débit.** Quand le ZEvent entier s'emballe, tout le
-  monde monte ensemble : à débit brut, toutes les touches s'allument à la fois.
-  Ramené à la part que capte le streamer, celui qui suit la vague ne bouge pas.
-- **Deux relevés consécutifs.** C'est ce qui pèse le plus : sur les mêmes
-  relevés, la part du flux seule déclenchait 101 fois, la durée ramène à 11.
-  Une minute isolée au-dessus, c'est une grosse donation ; un temps fort, ça
-  dure.
+Un plancher de 50 € par minute évite qu'une chaîne au repos, dont le rythme
+habituel est nul, s'allume au premier don de deux euros.
 
-Mesuré sur des relevés réels, 340 participants : **1,5 touche encadrée en
-moyenne**, et jamais plus de deux parmi les vingt plus grosses cagnottes. Une
-première version, qui comparait chaque streamer à son seul débit passé, en
-encadrait 14,5 — dont près de deux du top 20 en permanence.
+Mesuré en rejouant deux soirées — une calme, un pic — sur 340 participants :
+**0,6 à 1,1 touche encadrée en moyenne, et jamais plus d'une parmi les vingt
+plus grosses cagnottes**.
 
 Rien de tout cela ne coûte une requête : la réponse du ZEvent porte déjà les 338
 cagnottes à chaque sondage. En contrepartie il faut **une dizaine de minutes de
-sondages** avant le premier verdict : au démarrage, aucune part de référence
+sondages** avant le premier verdict : au démarrage, aucun rythme de référence
 n'existe encore, et le plugin préfère ne rien signaler qu'inventer. La case
 *Temps forts* désactive l'ensemble.
+
+Deux conséquences à connaître. Un streamer qui domine le ZEvent **depuis
+longtemps** n'est pas signalé : à son rythme de croisière, même énorme, il ne
+*croît* plus. Et pendant une accalmie de l'événement, il peut se passer des
+heures sans aucun cadre — c'est le comportement voulu.
 
 ### Format des chiffres
 
@@ -295,7 +298,7 @@ copyright.
 ## Crédits
 
 - **[QuentinPerou](https://github.com/quentinperou)** — conception, développement
-- **[Claude Code](https://claude.com/claude-code)** (Anthropic) — développement assisté
+- **Claude Code** (Anthropic) — développement assisté
 
 Les données proviennent de l'[API publique du ZEvent](https://zevent.fr/api/).
 Merci à l'équipe du ZEvent de l'exposer ouvertement, et aux streamers qui
