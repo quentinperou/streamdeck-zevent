@@ -79,7 +79,7 @@ async function main(): Promise<void> {
 	for (const streamer of zevent.streamers.slice(0, 10)) {
 		if (rendus >= 3) break;
 
-		const data = await goals.preload(streamer.twitchId);
+		const data = await goals.preload(streamer.twitchId, "auto");
 		if (!data || data.goals.length === 0) {
 			console.log(`  ${streamer.display.padEnd(20)} aucun palier`);
 			continue;

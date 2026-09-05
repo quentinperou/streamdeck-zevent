@@ -1,23 +1,27 @@
 import streamDeck from "@elgato/streamdeck";
 
 import { abbreviate, groupDigits } from "./format";
-import { goals } from "./goals";
+import { goals, type GoalSource } from "./goals";
+import { ingdoc } from "./ingdoc";
 import { zevent } from "./zevent";
 
 /**
  * Paliers d'un streamer, pour que le Property Inspector puisse les proposer.
  * Ils vivent sur un autre endpoint que la liste, d'où cet envoi séparé.
  */
-export async function sendGoals(twitchId: string): Promise<void> {
+export async function sendGoals(twitchId: string, source: GoalSource): Promise<void> {
 	if (!streamDeck.ui.action) return;
 
-	const data = await goals.preload(twitchId);
+	const data = await goals.preload(twitchId, source);
 	if (!streamDeck.ui.action) return;
 
 	await streamDeck.ui.sendToPropertyInspector({
 		event: "goals",
 		twitchId,
 		found: data !== null,
+		// La source qui a réellement répondu : en mode auto, ce n'est pas
+		// forcément celle qu'on a demandée.
+		source: data?.source ?? null,
 		donation: data?.donationText ?? null,
 		goals: (data?.goals ?? []).map((goal, index) => ({
 			index,
@@ -26,6 +30,29 @@ export async function sendGoals(twitchId: string): Promise<void> {
 			reached: goal.reached,
 		})),
 	});
+}
+
+/**
+ * Nombre de paliers par streamer, pour annoter le menu déroulant.
+ *
+ * Un seul appel à InGDoc couvre les 338 participants ; l'API officielle en
+ * exigerait autant de requêtes. Un échec reste silencieux : l'annotation est
+ * un confort de choix, pas une donnée dont dépend l'affichage.
+ */
+export async function sendGoalCounts(): Promise<void> {
+	if (!streamDeck.ui.action) return;
+
+	const counts: Record<string, number> = {};
+	try {
+		for (const [twitchId, entry] of await ingdoc.overview()) {
+			counts[twitchId] = entry.goalCount;
+		}
+	} catch {
+		return;
+	}
+
+	if (!streamDeck.ui.action) return;
+	await streamDeck.ui.sendToPropertyInspector({ event: "goalCounts", counts });
 }
 
 /**

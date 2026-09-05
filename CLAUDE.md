@@ -32,7 +32,8 @@ Avant de proposer quoi que ce soit : `sync-version -- --check`, `typecheck`,
 | --- | --- |
 | `src/plugin.ts` | Enregistrement des actions, abonnement au store, ponts vers le Property Inspector |
 | `src/zevent.ts` | Accès unique à l'API, cadence, cache des avatars |
-| `src/goals.ts` | Paliers de dons, fiche par fiche, seulement pour les streamers affichés |
+| `src/goals.ts` | Paliers de dons : choix de la source, repli, cache par couple streamer/source |
+| `src/ingdoc.ts` | Source alternative InGDoc : résolution de l'édition, décompte groupé |
 | `src/render.ts` | Visuels de touche en SVG |
 | `src/format.ts` | Nombres complets ou abrégés |
 | `src/key-image.ts` | Évite de réenvoyer une image identique |
@@ -120,9 +121,9 @@ La version vit dans `package.json`. `npm version patch|minor` la propage au
 - **major** — rupture
 
 Pousser un tag `v*` empaquette le plugin et crée la release GitHub. Le job de
-publication refuse de livrer tant que `Nodejs.Debug` vaut `"enabled"` dans le
-manifest : cette valeur reste sur `"disabled"` dans les commits, et se bascule
-localement le temps d'un débogage.
+publication refuse de livrer tant que `Nodejs.Debug` figure dans le manifest :
+le champ reste **absent** des commits et se pose localement le temps d'un
+débogage — jamais sur `"disabled"`, qui empêche le plugin de démarrer.
 
 ## Sources de données
 
@@ -130,6 +131,15 @@ localement le temps d'un débogage.
 | --- | --- | --- |
 | `https://zevent.fr/api/` | Tous les streamers, cagnottes, viewers, cagnotte globale | ~157 ko |
 | `https://api.zevent.fr/streamer/<twitch_id>` | Paliers de dons d'un streamer (`donationGoal.goals`) | ~2 ko |
+| `https://api.evenmorestats.fr/events` | Éditions, pour résoudre l'année en cours par les dates | ~3 ko |
+| `.../events/<id>/donation_goals/overview` | Décompte des paliers des 338, en un appel | ~244 ko |
+| `.../participations/<pid>/donation_goals` | Paliers d'un streamer chez InGDoc (montants **en centimes**) | ~3 ko |
 
-Le premier ne contient **pas** les paliers ; le second est le seul à les
-exposer, une fiche à la fois.
+La liste principale du ZEvent ne contient **pas** les paliers. L'officiel ne les
+expose qu'une fiche à la fois, et en oublie une partie : sur 60 streamers
+observés, 8 % y figurent sans aucun palier alors qu'ils en ont une quinzaine.
+InGDoc les a, et son `overview` est la **seule** route qui donne le décompte des
+338 en un appel — d'où l'annotation du menu déroulant, impossible autrement.
+
+InGDoc est un service communautaire, sans en-tête de cache ni limite de débit
+annoncée : le mode « auto » retombe toujours sur l'officiel s'il ne répond pas.

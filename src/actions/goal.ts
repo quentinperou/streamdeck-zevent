@@ -8,7 +8,7 @@ import type {
 	WillDisappearEvent,
 } from "@elgato/streamdeck";
 
-import { goals, pickGoal, progressToward } from "../goals";
+import { goals, pickGoal, progressToward, type GoalSource } from "../goals";
 import { KeyImageCache } from "../key-image";
 import { renderGoalKey, renderMessageKey } from "../render";
 import { zevent } from "../zevent";
@@ -20,6 +20,8 @@ export type GoalSettings = {
 	/** Un rang précis, ou « next » pour suivre le prochain palier non atteint. */
 	goalIndex?: number | "next";
 	showAvatar?: boolean;
+	/** D’où viennent les paliers. « auto » privilégie InGDoc et retombe sur l’officiel. */
+	goalSource?: GoalSource;
 	clickAction?: "twitch" | "donation";
 };
 
@@ -32,7 +34,7 @@ export class GoalAction extends SingletonAction<GoalSettings> {
 	 * Fiche suivie par chaque touche. Sans ce suivi, changer de streamer dans le
 	 * Property Inspector laisserait l'ancienne fiche interrogée indéfiniment.
 	 */
-	readonly #watched = new Map<string, string>();
+	readonly #watched = new Map<string, { twitchId: string; source: GoalSource }>();
 	/** Derniers réglages connus de chaque touche, poussés par Stream Deck. */
 	readonly #settings = new Map<string, GoalSettings>();
 
@@ -40,7 +42,7 @@ export class GoalAction extends SingletonAction<GoalSettings> {
 		zevent.retain();
 		this.#images.forget(ev.action.id);
 		this.#settings.set(ev.action.id, ev.payload.settings);
-		this.#watch(ev.action.id, ev.payload.settings.twitchId);
+		this.#watch(ev.action.id, ev.payload.settings);
 		await this.#render(ev.action, ev.payload.settings);
 	}
 
@@ -48,12 +50,12 @@ export class GoalAction extends SingletonAction<GoalSettings> {
 		zevent.release();
 		this.#images.forget(ev.action.id);
 		this.#settings.delete(ev.action.id);
-		this.#watch(ev.action.id, undefined);
+		this.#watch(ev.action.id, {});
 	}
 
 	override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<GoalSettings>): Promise<void> {
 		this.#settings.set(ev.action.id, ev.payload.settings);
-		this.#watch(ev.action.id, ev.payload.settings.twitchId);
+		this.#watch(ev.action.id, ev.payload.settings);
 		await this.#render(ev.action, ev.payload.settings);
 	}
 
@@ -88,14 +90,16 @@ export class GoalAction extends SingletonAction<GoalSettings> {
 	}
 
 	/** Bascule la fiche suivie par une touche, en libérant la précédente. */
-	#watch(actionId: string, twitchId: string | undefined): void {
+	#watch(actionId: string, settings: GoalSettings): void {
+		const twitchId = settings.twitchId;
+		const source = settings.goalSource ?? "auto";
 		const previous = this.#watched.get(actionId);
-		if (previous === twitchId) return;
+		if (previous && previous.twitchId === twitchId && previous.source === source) return;
 
-		if (previous) goals.release(previous);
+		if (previous) goals.release(previous.twitchId, previous.source);
 		if (twitchId) {
-			goals.retain(twitchId);
-			this.#watched.set(actionId, twitchId);
+			goals.retain(twitchId, source);
+			this.#watched.set(actionId, { twitchId, source });
 		} else {
 			this.#watched.delete(actionId);
 		}
@@ -110,11 +114,12 @@ export class GoalAction extends SingletonAction<GoalSettings> {
 			return;
 		}
 
-		const data = goals.get(settings.twitchId);
+		const source = settings.goalSource ?? "auto";
+		const data = goals.get(settings.twitchId, source);
 		if (!data) {
 			await this.#images.apply(
 				target,
-				goals.failed(settings.twitchId)
+				goals.failed(settings.twitchId, source)
 					? renderMessageKey("Paliers indisponibles", "warning")
 					: renderMessageKey("Chargement…"),
 			);

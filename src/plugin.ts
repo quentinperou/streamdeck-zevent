@@ -3,8 +3,8 @@ import streamDeck from "@elgato/streamdeck";
 import { GoalAction } from "./actions/goal";
 import { StreamerAction } from "./actions/streamer";
 import { TotalAction } from "./actions/total";
-import { goals } from "./goals";
-import { sendCatalogue, sendGoals } from "./pi";
+import { goals, type GoalSource } from "./goals";
+import { sendCatalogue, sendGoalCounts, sendGoals } from "./pi";
 import { installSafetyNet, safely } from "./safety";
 import { zevent } from "./zevent";
 
@@ -43,10 +43,19 @@ streamDeck.ui.onDidAppear(() => {
 });
 
 streamDeck.ui.onSendToPlugin((ev) => {
-	const payload = ev.payload as { event?: string; twitchId?: string } | null;
+	const payload = ev.payload as {
+		event?: string;
+		twitchId?: string;
+		source?: GoalSource;
+	} | null;
 
 	if (payload?.event === "getGoals" && payload.twitchId) {
-		safely(sendGoals(payload.twitchId), "envoi des paliers");
+		safely(sendGoals(payload.twitchId, payload.source ?? "auto"), "envoi des paliers");
+		return;
+	}
+
+	if (payload?.event === "getGoalCounts") {
+		safely(sendGoalCounts(), "envoi du décompte des paliers");
 		return;
 	}
 

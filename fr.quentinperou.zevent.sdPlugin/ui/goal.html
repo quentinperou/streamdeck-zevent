@@ -23,6 +23,17 @@
 		</div>
 
 		<div class="row">
+			<label for="source">Source</label>
+			<div class="field">
+				<select id="source">
+					<option value="auto">Auto — InGDoc, sinon ZEvent</option>
+					<option value="ingdoc">InGDoc</option>
+					<option value="zevent">ZEvent (officiel)</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="row">
 			<label for="goal">Palier</label>
 			<div class="field">
 				<select id="goal" disabled>
@@ -69,6 +80,8 @@
 				var catalogue = [];
 				var settings = {};
 				var paliers = null;
+				/** Nombre de paliers par identifiant Twitch, pour annoter la liste. */
+				var counts = null;
 				var loaded = false;
 
 				/** Recherche insensible à la casse et aux accents. */
@@ -77,6 +90,10 @@
 						.normalize("NFD")
 						.replace(/[̀-ͯ]/g, "")
 						.toLowerCase();
+				}
+
+				function source() {
+					return settings.goalSource || "auto";
 				}
 
 				function find(login) {
@@ -123,7 +140,11 @@
 					matches.forEach(function (streamer) {
 						var option = document.createElement("option");
 						option.value = streamer.login;
-						option.textContent = (streamer.online ? "🟢 " : "") + streamer.display;
+						var n = counts && streamer.twitchId ? counts[streamer.twitchId] : undefined;
+						option.textContent =
+							(streamer.online ? "🟢 " : "") +
+							streamer.display +
+							(typeof n === "number" ? " — " + n + " palier" + (n > 1 ? "s" : "") : "");
 						select.appendChild(option);
 					});
 
@@ -224,12 +245,23 @@
 					window.PI.setSettings(settings);
 				}
 
+				function askCounts() {
+					// Le décompte vient d'InGDoc. Inutile de le demander quand on a choisi
+					// l'API officielle : elle n'a pas d'endpoint groupé pour le fournir.
+					if (source() === "zevent") {
+						counts = null;
+						fillStreamers();
+						return;
+					}
+					window.PI.sendToPlugin({ event: "getGoalCounts" });
+				}
+
 				function askGoals() {
 					paliers = null;
 					fillGoals();
 					fillPreview();
 					if (settings.twitchId) {
-						window.PI.sendToPlugin({ event: "getGoals", twitchId: settings.twitchId });
+						window.PI.sendToPlugin({ event: "getGoals", twitchId: settings.twitchId, source: source() });
 					}
 				}
 
@@ -254,6 +286,13 @@
 					fillPreview();
 				});
 
+				$("source").addEventListener("change", function () {
+					settings.goalSource = $("source").value;
+					save();
+					askCounts();
+					askGoals();
+				});
+
 				$("show-avatar").addEventListener("change", function () {
 					settings.showAvatar = $("show-avatar").checked;
 					save();
@@ -268,7 +307,7 @@
 					$("refresh").disabled = true;
 					window.PI.sendToPlugin({ event: "refresh" });
 					if (settings.twitchId) {
-						window.PI.sendToPlugin({ event: "getGoals", twitchId: settings.twitchId });
+						window.PI.sendToPlugin({ event: "getGoals", twitchId: settings.twitchId, source: source() });
 					}
 					setTimeout(function () {
 						$("refresh").disabled = false;
@@ -277,13 +316,15 @@
 
 				window.PI.onSettings = function (next) {
 					settings = next || {};
+					$("source").value = source();
 					$("show-avatar").checked = settings.showAvatar !== false;
 					$("click").value = settings.clickAction === "donation" ? "donation" : "twitch";
 					fillStreamers();
 					fillPreview();
 					window.PI.sendToPlugin({ event: "getCatalogue" });
+					askCounts();
 					if (settings.twitchId) {
-						window.PI.sendToPlugin({ event: "getGoals", twitchId: settings.twitchId });
+						window.PI.sendToPlugin({ event: "getGoals", twitchId: settings.twitchId, source: source() });
 					}
 				};
 
@@ -299,6 +340,11 @@
 					status.textContent = catalogue.length ? catalogue.length + " streamers" : "";
 				});
 
+				window.PI.on("goalCounts", function (payload) {
+					counts = payload.counts || null;
+					fillStreamers();
+				});
+
 				window.PI.on("goals", function (payload) {
 					// Une réponse pour un autre streamer est périmée : l'utilisateur a
 					// changé d'avis pendant l'aller-retour.
@@ -308,7 +354,9 @@
 					fillGoals();
 					fillPreview();
 					if (payload.found) {
-						$("status").textContent = payload.goals.length + " paliers · " + payload.donation;
+						$("status").textContent =
+							payload.goals.length + " paliers · " + payload.donation +
+							(payload.source ? " · " + (payload.source === "ingdoc" ? "InGDoc" : "ZEvent") : "");
 					}
 				});
 			})();
