@@ -16,7 +16,9 @@
 			"UUID": "fr.quentinperou.zevent.streamer",
 			"Tooltip": "Cagnotte d'un streamer du ZEvent. Appui : ouvre sa chaîne Twitch.",
 			"SupportedInMultiActions": false,
-			"Controllers": ["Keypad"],
+			"Controllers": [
+				"Keypad"
+			],
 			"States": [
 				{
 					"Image": "imgs/actions/streamer/key",
@@ -33,7 +35,9 @@
 			"UUID": "fr.quentinperou.zevent.total",
 			"Tooltip": "Cagnotte totale du ZEvent. Appui : ouvre la page de don.",
 			"SupportedInMultiActions": false,
-			"Controllers": ["Keypad"],
+			"Controllers": [
+				"Keypad"
+			],
 			"States": [
 				{
 					"Image": "imgs/actions/total/key",

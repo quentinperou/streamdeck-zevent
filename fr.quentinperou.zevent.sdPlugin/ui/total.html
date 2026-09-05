@@ -23,6 +23,16 @@
 		</div>
 
 		<div class="row">
+			<label for="format">Chiffres</label>
+			<div class="field">
+				<select id="format">
+					<option value="full">Complets — 1 250 000 €</option>
+					<option value="short">Abrégés — 1.25M €</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="row">
 			<label for="click">Au clic</label>
 			<div class="field">
 				<select id="click">
@@ -47,23 +57,72 @@
 				};
 
 				var settings = {};
+				var lastPayload = null;
 
-				function formatCount(value) {
-					return String(Math.round(value || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+				/** Le plugin envoie les deux mises en forme : ici on ne fait que choisir. */
+				function short() {
+					return settings.numberFormat === "short";
 				}
 
 				function save() {
 					window.PI.setSettings(settings);
 				}
 
+				/** Redessine l'aperçu depuis le dernier catalogue reçu et les réglages courants. */
+				function fillPreview() {
+					var preview = $("preview");
+					var totals = lastPayload && lastPayload.totals;
+
+					if (!totals) {
+						preview.className = "preview empty";
+						preview.textContent =
+							lastPayload && lastPayload.error ? "ZEvent injoignable" : "Chargement…";
+						return;
+					}
+
+					preview.className = "preview";
+					preview.innerHTML = "";
+
+					var info = document.createElement("div");
+					info.className = "info";
+
+					var name = document.createElement("div");
+					name.className = "name";
+					name.textContent = $("label").value.trim() || "ZEVENT";
+
+					var amount = document.createElement("div");
+					amount.className = "amount";
+					amount.textContent = short() ? totals.donationShort : totals.donationText;
+
+					var meta = document.createElement("div");
+					meta.className = "meta";
+					meta.appendChild(
+						document.createTextNode(
+							(short() ? totals.viewersShort : totals.viewersFull) + " viewers",
+						),
+					);
+
+					info.appendChild(name);
+					info.appendChild(amount);
+					info.appendChild(meta);
+					preview.appendChild(info);
+				}
+
 				$("label").addEventListener("input", function () {
 					settings.label = $("label").value;
 					save();
+					fillPreview();
 				});
 
 				$("show-viewers").addEventListener("change", function () {
 					settings.showViewers = $("show-viewers").checked;
 					save();
+				});
+
+				$("format").addEventListener("change", function () {
+					settings.numberFormat = $("format").value;
+					save();
+					fillPreview();
 				});
 
 				$("click").addEventListener("change", function () {
@@ -83,46 +142,23 @@
 					settings = next || {};
 					$("label").value = settings.label || "";
 					$("show-viewers").checked = settings.showViewers !== false;
+					$("format").value = settings.numberFormat === "short" ? "short" : "full";
 					$("click").value = settings.clickAction === "site" ? "site" : "donation";
+					fillPreview();
 					window.PI.sendToPlugin({ event: "getCatalogue" });
 				};
 
 				window.PI.on("catalogue", function (payload) {
+					lastPayload = payload;
 					$("refresh").disabled = false;
+					fillPreview();
 
-					var preview = $("preview");
 					var status = $("status");
-
 					if (!payload.totals) {
-						preview.className = "preview empty";
-						preview.textContent = payload.error ? "ZEvent injoignable" : "Chargement…";
 						status.className = "status";
 						status.textContent = "";
 						return;
 					}
-
-					preview.className = "preview";
-					preview.innerHTML = "";
-
-					var info = document.createElement("div");
-					info.className = "info";
-
-					var name = document.createElement("div");
-					name.className = "name";
-					name.textContent = $("label").value.trim() || "ZEVENT";
-
-					var amount = document.createElement("div");
-					amount.className = "amount";
-					amount.textContent = payload.totals.donationText;
-
-					var meta = document.createElement("div");
-					meta.className = "meta";
-					meta.appendChild(document.createTextNode(formatCount(payload.totals.viewers) + " viewers"));
-
-					info.appendChild(name);
-					info.appendChild(amount);
-					info.appendChild(meta);
-					preview.appendChild(info);
 
 					var live = (payload.streamers || []).filter(function (streamer) {
 						return streamer.online;

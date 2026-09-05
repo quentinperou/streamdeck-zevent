@@ -1,0 +1,116 @@
+name: Build
+
+on:
+  push:
+    # Pas de `paths-ignore` ici : le filtre s'appliquerait aussi aux tags et
+    # pourrait faire sauter une publication selon le contenu du commit taggé.
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # 20.x est la version que Stream Deck fournit au plugin (cf. manifest.json) ;
+        # 22.x garde un œil sur ce que verra la prochaine.
+        node-version: [20.x, 22.x]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Installation
+        run: npm ci
+
+      - name: Cohérence des versions
+        run: npm run sync-version -- --check
+
+      - name: Contrôle des types
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Intégrité du dossier plugin
+        run: npm run check
+
+  package:
+    name: Paquet
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - name: Installation
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Contrôles de publication
+        run: npm run check -- --release
+
+      - name: Empaquetage
+        run: npm run pack
+
+      - name: Version issue du tag
+        id: version
+        run: echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Nommage du paquet
+        run: |
+          mv fr.quentinperou.zevent.streamDeckPlugin \
+             "fr.quentinperou.zevent-${{ steps.version.outputs.value }}.streamDeckPlugin"
+
+      - name: Dépôt de l'artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: streamdeck-zevent-${{ steps.version.outputs.value }}
+          path: fr.quentinperou.zevent-*.streamDeckPlugin
+          if-no-files-found: error
+
+  release:
+    name: Publication
+    needs: package
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    permissions:
+      contents: write
+
+    steps:
+      - name: Récupération de l'artefact
+        uses: actions/download-artifact@v4
+        with:
+          pattern: streamdeck-zevent-*
+          merge-multiple: true
+
+      - name: Release GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: fr.quentinperou.zevent-*.streamDeckPlugin
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') }}

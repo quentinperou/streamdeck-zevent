@@ -7,22 +7,18 @@ import type {
 	WillAppearEvent,
 } from "@elgato/streamdeck";
 
+import { formatAmount, formatViewers, type NumberFormat } from "../format";
 import { renderMessageKey, renderTotalKey } from "../render";
 import { zevent } from "../zevent";
 
 export type TotalSettings = {
 	label?: string;
 	showViewers?: boolean;
+	numberFormat?: NumberFormat;
 	clickAction?: "donation" | "site";
 };
 
 type AnyAction = KeyAction<TotalSettings> | DialAction<TotalSettings>;
-
-function formatCount(value: number): string {
-	return Math.round(value)
-		.toString()
-		.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-}
 
 @action({ UUID: "fr.quentinperou.zevent.total" })
 export class TotalAction extends SingletonAction<TotalSettings> {
@@ -62,11 +58,16 @@ export class TotalAction extends SingletonAction<TotalSettings> {
 			return;
 		}
 
+		const format = settings.numberFormat ?? "full";
+
 		await target.setImage(
 			renderTotalKey({
 				label: settings.label?.trim() || "ZEVENT",
-				amount: totals.donationText,
-				viewers: settings.showViewers === false ? null : `${formatCount(totals.viewers)} viewers`,
+				amount: formatAmount(totals.donation, totals.donationText, format),
+				viewers:
+					settings.showViewers === false
+						? null
+						: `${formatViewers(totals.viewers, format)} viewers`,
 				stale: zevent.isStale,
 			}),
 		);

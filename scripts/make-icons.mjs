@@ -14,8 +14,8 @@ import sharp from "sharp";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const IMGS = join(ROOT, "fr.quentinperou.zevent.sdPlugin", "imgs");
 
-const DARK = "#12121A";
-const GOLD = "#FFD447";
+const DARK = "#0B0B0B";
+const GREEN = "#00BD00";
 
 /** Le Z du ZEvent, tracé dans une boîte de 100×100. */
 const Z_PATH = "M18 20 H82 V34 L44 66 H82 V80 H18 V66 L56 34 H18 Z";
@@ -34,10 +34,10 @@ function glyph(path) {
 	return svg(`<path d="${path}" fill="#FFFFFF"/>`);
 }
 
-/** Vignette carrée : le tracé doré sur le fond sombre des touches. */
+/** Vignette carrée : le tracé vert ZEvent sur le fond sombre des touches. */
 function tile(path) {
 	return svg(
-		`<rect width="100" height="100" rx="16" fill="${DARK}"/><path d="${path}" fill="${GOLD}"/>`,
+		`<rect width="100" height="100" rx="16" fill="${DARK}"/><path d="${path}" fill="${GREEN}"/>`,
 	);
 }
 

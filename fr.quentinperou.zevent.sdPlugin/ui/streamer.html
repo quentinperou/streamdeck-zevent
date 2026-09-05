@@ -47,6 +47,16 @@
 		</div>
 
 		<div class="row">
+			<label for="format">Chiffres</label>
+			<div class="field">
+				<select id="format">
+					<option value="full">Complets — 1 250 000 €</option>
+					<option value="short">Abrégés — 1.25M €</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="row">
 			<label for="click">Au clic</label>
 			<div class="field">
 				<select id="click">
@@ -82,8 +92,9 @@
 						.toLowerCase();
 				}
 
-				function formatCount(value) {
-					return String(Math.round(value || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+				/** Le plugin envoie les deux mises en forme : ici on ne fait que choisir. */
+				function short() {
+					return settings.numberFormat === "short";
 				}
 
 				function sorted(list) {
@@ -109,7 +120,7 @@
 				}
 
 				function label(streamer) {
-					return (streamer.online ? "🔴 " : "") + streamer.display + " — " + streamer.donation;
+					return (streamer.online ? "🟢 " : "") + streamer.display + " — " + streamer.donation;
 				}
 
 				function fillSelect() {
@@ -190,7 +201,7 @@
 
 					var amount = document.createElement("div");
 					amount.className = "amount";
-					amount.textContent = streamer.donation;
+					amount.textContent = short() ? streamer.donationShort : streamer.donation;
 
 					var meta = document.createElement("div");
 					meta.className = "meta";
@@ -199,7 +210,9 @@
 					meta.appendChild(dot);
 					meta.appendChild(
 						document.createTextNode(
-							streamer.online ? formatCount(streamer.viewers) + " viewers" : "hors ligne",
+							streamer.online
+								? (short() ? streamer.viewersShort : streamer.viewersFull) + " viewers"
+								: "hors ligne",
 						),
 					);
 
@@ -262,6 +275,12 @@
 					save();
 				});
 
+				$("format").addEventListener("change", function () {
+					settings.numberFormat = $("format").value;
+					save();
+					fillPreview();
+				});
+
 				$("click").addEventListener("change", function () {
 					settings.clickAction = $("click").value;
 					save();
@@ -280,6 +299,7 @@
 					settings = next || {};
 					$("show-avatar").checked = settings.showAvatar !== false;
 					$("show-viewers").checked = settings.showViewers !== false;
+					$("format").value = settings.numberFormat === "short" ? "short" : "full";
 					$("click").value = settings.clickAction === "donation" ? "donation" : "twitch";
 					fillSelect();
 					fillPreview();

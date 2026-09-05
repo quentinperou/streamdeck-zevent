@@ -7,6 +7,7 @@ import type {
 	WillAppearEvent,
 } from "@elgato/streamdeck";
 
+import { formatAmount, formatViewers, type NumberFormat } from "../format";
 import { renderMessageKey, renderStreamerKey } from "../render";
 import { zevent } from "../zevent";
 
@@ -14,17 +15,11 @@ export type StreamerSettings = {
 	login?: string;
 	showAvatar?: boolean;
 	showViewers?: boolean;
+	numberFormat?: NumberFormat;
 	clickAction?: "twitch" | "donation";
 };
 
 type AnyAction = KeyAction<StreamerSettings> | DialAction<StreamerSettings>;
-
-/** Groupe les milliers sans dépendre de l'ICU embarquée par Stream Deck. */
-function formatCount(value: number): string {
-	return Math.round(value)
-		.toString()
-		.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-}
 
 @action({ UUID: "fr.quentinperou.zevent.streamer" })
 export class StreamerAction extends SingletonAction<StreamerSettings> {
@@ -89,18 +84,19 @@ export class StreamerAction extends SingletonAction<StreamerSettings> {
 			return;
 		}
 
+		const format = settings.numberFormat ?? "full";
 		const avatar = settings.showAvatar === false ? null : await zevent.avatar(streamer.login);
 		const viewers =
 			settings.showViewers === false
 				? null
 				: streamer.online
-					? `${formatCount(streamer.viewers)} viewers`
+					? `${formatViewers(streamer.viewers, format)} viewers`
 					: "hors ligne";
 
 		await target.setImage(
 			renderStreamerKey({
 				name: streamer.display,
-				amount: streamer.donationText,
+				amount: formatAmount(streamer.donation, streamer.donationText, format),
 				viewers,
 				online: streamer.online,
 				avatar,

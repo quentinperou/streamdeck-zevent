@@ -1,7 +1,17 @@
 # ZEvent pour Stream Deck
 
+[![Build](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml/badge.svg)](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml)
+[![Version](https://img.shields.io/badge/version-1.0.0-00BD00)](https://github.com/quentinperou/streamdeck-zevent/releases)
+
 Affiche les cagnottes du ZEvent sur les touches d'un Stream Deck, et ouvre la
 chaîne Twitch du streamer d'un simple appui.
+
+## Installation
+
+Récupérez le fichier `.streamDeckPlugin` de la
+[dernière release](https://github.com/quentinperou/streamdeck-zevent/releases)
+et double-cliquez dessus : Stream Deck se charge du reste. Les actions
+apparaissent ensuite dans la catégorie **ZEvent**.
 
 ## Actions
 
@@ -10,9 +20,35 @@ chaîne Twitch du streamer d'un simple appui.
 | **Cagnotte streamer** | Pseudo, cagnotte, viewers, avatar en fond | Ouvre `twitch.tv/<pseudo>` (ou la page de don) |
 | **Cagnotte globale** | Total du ZEvent et viewers cumulés | Ouvre la page de don (ou `zevent.fr`) |
 
-Le bandeau rouge en bas de touche signale un stream en direct ; il s'éteint
+Le bandeau vert en bas de touche signale un stream en direct ; il s'éteint
 lorsque le streamer est hors ligne. Une pastille ambre apparaît si la donnée
 affichée a plus de deux minutes.
+
+### Format des chiffres
+
+Chaque action propose deux écritures, montants et viewers compris :
+
+| | Cagnotte | Viewers |
+| --- | --- | --- |
+| **Complets** (défaut) | `4 063 113 €` | `315 036 viewers` |
+| **Abrégés** | `4.06M €` | `315K viewers` |
+
+Deux décimales sous 10, une au-delà — `1.25M` d'un côté, `800.8K` de l'autre —
+et les zéros inutiles disparaissent (`1.00M` s'écrit `1M`). Une touche fait
+72 pixels : moins de caractères, c'est une police plus grande et un montant
+lisible d'un coup d'œil, au prix de la précision.
+
+## Couleurs
+
+La palette est relevée sur zevent.fr, pas approximée : vert **`#00BD00`** en
+accent (celui de la navigation et des pastilles « en direct » du site), noirs
+neutres `#0B0B0B` / `#242424` en fond. Le site réserve le blanc à ses grands
+compteurs et le vert aux montants de sa liste de streamers — les touches
+reprennent cette répartition : cagnotte d'un streamer en vert, total du ZEvent
+en blanc sous un intitulé vert.
+
+L'incrustation sombre posée sur l'avatar est calibrée pour que le vert reste
+lisible même sur un portrait clair ou très saturé.
 
 ## Property Inspector
 
@@ -50,7 +86,38 @@ modification.
 `npm run preview` interroge le vrai ZEvent et écrit les visuels de touche en SVG
 dans `.preview/` : de quoi itérer sur le rendu sans repasser par Stream Deck.
 
+`npm run check` vérifie que le dossier `.sdPlugin` se tient : point d'entrée
+présent, icônes déclarées par le manifest réellement sur le disque (variantes
+`@2x` comprises), Property Inspectors accessibles. Stream Deck ne signale ces
+chemins qu'à l'installation — ce contrôle les fait remonter au build.
+
 `npm run pack` produit le `.streamDeckPlugin` distribuable.
 
-> `manifest.json` laisse `Nodejs.Debug` sur `enabled`, pratique en développement.
-> À passer sur `disabled` avant toute diffusion.
+### Versions
+
+La version vit dans `package.json`. `npm version patch` la propage
+automatiquement au `Version` du manifest — que Stream Deck attend en quatre
+segments — et au badge du README, via `scripts/sync-version.mjs`. La CI refuse
+toute divergence (`npm run sync-version -- --check`).
+
+### Publication
+
+Un tag `v*` poussé sur le dépôt déclenche l'empaquetage et crée la release
+GitHub avec le `.streamDeckPlugin` en pièce jointe.
+
+> `manifest.json` laisse `Nodejs.Debug` sur `enabled`, pratique en
+> développement. Le job de publication refuse un tag tant qu'il n'est pas
+> repassé sur `disabled` : le port de débogage n'a rien à faire chez les
+> utilisateurs.
+
+## Crédits
+
+- **[QuentinPerou](https://github.com/quentinperou)** — conception, développement
+- **[Claude Code](https://claude.com/claude-code)** (Anthropic) — développement assisté
+
+Les données proviennent de l'[API publique du ZEvent](https://zevent.fr/api/).
+Merci à l'équipe du ZEvent de l'exposer ouvertement, et aux streamers qui
+remplissent ces cagnottes.
+
+Ce plugin est un projet indépendant : il n'est ni affilié, ni approuvé, ni
+soutenu par le ZEvent, Twitch ou Elgato.

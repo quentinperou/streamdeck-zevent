@@ -12,14 +12,20 @@ const PADDING = 6;
 const CONTENT_WIDTH = SIZE - PADDING * 2;
 const FONT = "Arial, Helvetica, sans-serif";
 
+/**
+ * Palette relevée sur zevent.fr : vert #00BD00 en accent, noirs neutres en fond.
+ * Le site réserve le blanc à ses grands compteurs et le vert aux montants de sa
+ * liste de streamers — les touches reprennent cette répartition, et le vert y
+ * signale aussi le direct, comme la pastille du site.
+ */
 const COLORS = {
-	background: "#12121A",
-	amount: "#FFD447",
+	background: "#0B0B0B",
+	amount: "#00BD00",
 	name: "#FFFFFF",
-	nameOffline: "#8D93A3",
-	muted: "#A6ACBB",
-	live: "#E4003C",
-	offline: "#2A2A35",
+	nameOffline: "#8B8B8B",
+	muted: "#A3A3A3",
+	live: "#00BD00",
+	offline: "#242424",
 	stale: "#F0A020",
 };
 
@@ -113,7 +119,9 @@ function background(avatar: string | null): string {
 		// message envoyé à Stream Deck, on ne la duplique pas pour deux syntaxes.
 		body +=
 			`<image x="0" y="0" width="${SIZE}" height="${SIZE}" xlink:href="${avatar}"/>` +
-			`<rect width="${SIZE}" height="${SIZE}" fill="#000000" opacity="0.72"/>`;
+			// Assez sombre pour qu'un montant vert reste lisible sur n'importe quel
+			// avatar, y compris les portraits clairs ou très saturés.
+			`<rect width="${SIZE}" height="${SIZE}" fill="#000000" opacity="0.78"/>`;
 	}
 	return body;
 }
@@ -187,7 +195,6 @@ export function renderTotalKey(options: TotalKeyOptions): string {
 		y: viewers ? 29 : 35,
 		size: labelSize,
 		fill: COLORS.amount,
-		opacity: 0.85,
 	});
 	body += text(amount, {
 		y: viewers ? 89 : 99,

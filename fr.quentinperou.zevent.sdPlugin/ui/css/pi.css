@@ -1,16 +1,48 @@
 :root {
+	/* Bascule les contrôles natifs — ascenseurs, menus déroulants, curseur de
+	   saisie — sur leur variante sombre. Sans cela l'ascenseur du Property
+	   Inspector reste blanc au milieu du thème sombre de Stream Deck. */
+	color-scheme: dark;
+
 	--bg: #2d2d2d;
+	--scroll-thumb: #565656;
+	--scroll-thumb-hover: #6b6b6b;
 	--text: #d8d8d8;
 	--muted: #969696;
 	--field: #3d3d3d;
 	--field-hover: #4a4a4a;
 	--line: #3d3d3d;
-	--gold: #ffd447;
-	--live: #e4003c;
+	--green: #00bd00;
+	--live: #00bd00;
 }
 
 * {
 	box-sizing: border-box;
+}
+
+/* `color-scheme` suffit à rendre l'ascenseur sombre ; ces règles l'alignent en
+   plus sur la finesse de ceux de Stream Deck. */
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: var(--scroll-thumb);
+	border: 2px solid var(--bg);
+	border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: var(--scroll-thumb-hover);
+}
+
+::-webkit-scrollbar-corner {
+	background: transparent;
 }
 
 body {
@@ -99,7 +131,7 @@ select:disabled {
 
 .check input {
 	margin: 0;
-	accent-color: var(--gold);
+	accent-color: var(--green);
 	cursor: pointer;
 }
 
@@ -150,7 +182,7 @@ hr {
 }
 
 .preview .amount {
-	color: var(--gold);
+	color: var(--green);
 	font-size: 15px;
 	font-weight: 700;
 	line-height: 1.25;
