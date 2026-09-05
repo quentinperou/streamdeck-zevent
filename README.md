@@ -2,6 +2,7 @@
 
 [![Build](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml/badge.svg)](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml)
 [![Version](https://img.shields.io/badge/version-1.0.0-00BD00)](https://github.com/quentinperou/streamdeck-zevent/releases)
+[![Licence](https://img.shields.io/badge/licence-MIT-00BD00)](LICENSE)
 
 Affiche les cagnottes du ZEvent sur les touches d'un Stream Deck, et ouvre la
 chaîne Twitch du streamer d'un simple appui.
@@ -109,6 +110,17 @@ GitHub avec le `.streamDeckPlugin` en pièce jointe.
 > développement. Le job de publication refuse un tag tant qu'il n'est pas
 > repassé sur `disabled` : le port de débogage n'a rien à faire chez les
 > utilisateurs.
+
+## Contribuer
+
+Bugs, idées et pull requests sont les bienvenus — voir
+[CONTRIBUTING.md](CONTRIBUTING.md), qui détaille la mise en route et les
+quelques contraintes du plugin qui ne se devinent pas à la lecture du code.
+
+## Licence
+
+[MIT](LICENSE) — faites-en ce que vous voulez, en gardant la mention de
+copyright.
 
 ## Crédits
 
