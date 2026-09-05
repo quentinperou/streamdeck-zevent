@@ -65,6 +65,6 @@
 	],
 	"Nodejs": {
 		"Version": "20",
-		"Debug": "enabled"
+		"Debug": "disabled"
 	}
 }

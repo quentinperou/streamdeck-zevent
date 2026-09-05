@@ -120,10 +120,10 @@ toute divergence (`npm run sync-version -- --check`).
 Un tag `v*` poussé sur le dépôt déclenche l'empaquetage et crée la release
 GitHub avec le `.streamDeckPlugin` en pièce jointe.
 
-> `manifest.json` laisse `Nodejs.Debug` sur `enabled`, pratique en
-> développement. Le job de publication refuse un tag tant qu'il n'est pas
-> repassé sur `disabled` : le port de débogage n'a rien à faire chez les
-> utilisateurs.
+> `Nodejs.Debug` reste sur `disabled` dans le dépôt : le port de débogage n'a
+> rien à faire chez les utilisateurs, et le job de publication refuse un tag
+> tant qu'il vaut `enabled`. Basculez-le localement le temps d'un débogage,
+> sans le committer.
 
 ## Contribuer
 
