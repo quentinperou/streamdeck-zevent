@@ -33,7 +33,7 @@ Avant de proposer quoi que ce soit : `sync-version -- --check`, `typecheck`,
 | `src/plugin.ts` | Enregistrement des actions, abonnement au store, ponts vers le Property Inspector |
 | `src/zevent.ts` | Accès unique à l'API, cadence, cache des avatars |
 | `src/goals.ts` | Paliers de dons : choix de la source, repli, cache par couple streamer/source |
-| `src/ingdoc.ts` | Source alternative InGDoc : résolution de l'édition, décompte groupé |
+| `src/ingdoc.ts` | Source alternative InGDoc : résolution de l'édition, décompte groupé, historiques |
 | `src/render.ts` | Visuels de touche en SVG |
 | `src/format.ts` | Nombres complets ou abrégés |
 | `src/key-image.ts` | Évite de réenvoyer une image identique |
@@ -135,7 +135,8 @@ débogage — jamais sur `"disabled"`, qui empêche le plugin de démarrer.
 | `https://api.evenmorestats.fr/events` | Éditions, pour résoudre l'année en cours par les dates | ~3 ko |
 | `.../events/<id>/donation_goals/overview` | Décompte des paliers des 338, en un appel | ~244 ko |
 | `.../participations/<pid>/donation_goals` | Paliers d'un streamer chez InGDoc (montants **en centimes**) | ~3 ko |
-| `evenmorestats-cache.s3…/metrics/<ev>/streamers/<id>.json` | Historique des dons, un point toutes les 10 min | ~9 ko |
+| `evenmorestats-cache.s3…/metrics/<ev>/streamers/<id>.json` | Historique des dons d'un streamer, un point toutes les 10 min | ~9 ko |
+| `evenmorestats-cache.s3…/metrics/<ev>/global.json` | Historique de la cagnotte globale, dons ventilés LAN/distanciel | ~27 ko |
 
 La liste principale du ZEvent ne contient **pas** les paliers. L'officiel ne les
 expose qu'une fiche à la fois, et en oublie une partie : sur 60 streamers
@@ -147,6 +148,13 @@ InGDoc est un service communautaire, sans en-tête de cache ni limite de débit
 annoncée : le mode « auto » retombe toujours sur l'officiel s'il ne répond pas.
 
 **L’historique des dons n’existe nulle part ailleurs.** Il vit dans un cache S3,
-pas dans une API documentée — plus fragile encore que le reste d’InGDoc. Et ce
-fichier contient deux séries dont **une seule est chronologique** : celle des
-viewers arrive à l’envers. Trier par horodatage, ne pas se fier à l’ordre reçu.
+pas dans une API documentée — plus fragile encore que le reste d’InGDoc. Ces
+fichiers portent plusieurs séries dont **une seule est chronologique** : celle
+des viewers arrive à l’envers. Trier par horodatage, ne pas se fier à l’ordre
+reçu.
+
+**Les deux fichiers de métriques n’ont pas la même forme.** Chez un streamer,
+`graph.donations` porte directement `labels`/`values` ; dans `global.json`, les
+dons sont ventilés en `remote`, `lan` et `all` — seul `all` correspond au total
+affiché par le ZEvent. Le fichier global s’atteint en revanche sans passer par
+l’`overview` : une touche globale seule ne télécharge pas les 244 ko.

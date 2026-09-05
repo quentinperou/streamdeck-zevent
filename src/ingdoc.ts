@@ -65,8 +65,18 @@ type RawOverview = {
 	streamers?: { id?: string }[];
 };
 
+type RawSerie = { labels?: number[]; values?: number[] };
+
 type RawMetrics = {
-	graph?: { donations?: { labels?: number[]; values?: number[] } };
+	graph?: { donations?: RawSerie };
+};
+
+/**
+ * Le fichier global ventile les dons entre la LAN et le distanciel ; seul
+ * `all` correspond au total qu'affiche le ZEvent.
+ */
+type RawGlobalMetrics = {
+	graph?: { donations?: { all?: RawSerie } };
 };
 
 type RawGoal = {
@@ -88,6 +98,33 @@ async function getJson<T>(path: string): Promise<T> {
 	return (await res.json()) as T;
 }
 
+/** Le cache de métriques est un bucket S3, pas l'API : autre hôte, mêmes égards. */
+async function getMetrics<T>(path: string): Promise<T> {
+	const res = await fetch(`${METRICS}${path}`, {
+		headers: { accept: "application/json", "user-agent": USER_AGENT },
+		signal: AbortSignal.timeout(TIMEOUT_MS),
+	});
+	if (!res.ok) throw new Error(`HTTP ${res.status}`);
+	return (await res.json()) as T;
+}
+
+/**
+ * Remet une série de métriques dans l'ordre chronologique.
+ *
+ * Ces fichiers portent plusieurs séries et une seule est triée : celle des
+ * viewers arrive à l'envers. On trie plutôt que de se fier à l'ordre reçu.
+ */
+function toPoints(serie: RawSerie | undefined): number[] {
+	const labels = serie?.labels ?? [];
+	const values = serie?.values ?? [];
+
+	return labels
+		.map((at, index) => ({ at, value: values[index] }))
+		.filter((point): point is { at: number; value: number } => typeof point.value === "number")
+		.sort((a, b) => a.at - b.at)
+		.map((point) => point.value);
+}
+
 /** Les montants d'InGDoc sont en centimes. */
 function toEuros(cents: number | undefined): number {
 	return Math.round(((cents ?? 0) / 100) * 100) / 100;
@@ -98,6 +135,7 @@ class IngdocSource {
 	#overview: Cached<Map<string, IngdocEntry>> | null = null;
 	#goals = new Map<string, Cached<IngdocGoal[]>>();
 	#history = new Map<string, Cached<number[]>>();
+	#globalHistory: Cached<number[]> | null = null;
 	#inFlight = new Map<string, Promise<unknown>>();
 
 	/** Déduplique les appels concurrents vers la même ressource. */
@@ -194,26 +232,35 @@ class IngdocSource {
 
 		return this.#once(`history:${streamerId}`, async () => {
 			const id = await this.eventId();
-			const res = await fetch(
-				`${METRICS}/metrics/${encodeURIComponent(id)}/streamers/${encodeURIComponent(streamerId)}.json`,
-				{ headers: { accept: "application/json", "user-agent": USER_AGENT }, signal: AbortSignal.timeout(TIMEOUT_MS) },
+			const raw = await getMetrics<RawMetrics>(
+				`/metrics/${encodeURIComponent(id)}/streamers/${encodeURIComponent(streamerId)}.json`,
 			);
-			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-			const raw = (await res.json()) as RawMetrics;
-			const serie = raw.graph?.donations;
-			const labels = serie?.labels ?? [];
-			const values = serie?.values ?? [];
-
-			// Les deux séries de ce fichier ne sont pas dans le même ordre : celle
-			// des viewers arrive à l'envers. On trie plutôt que de faire confiance.
-			const points = labels
-				.map((at, index) => ({ at, value: values[index] }))
-				.filter((p): p is { at: number; value: number } => typeof p.value === "number")
-				.sort((a, b) => a.at - b.at)
-				.map((p) => p.value);
+			const points = toPoints(raw.graph?.donations);
 
 			this.#history.set(streamerId, { value: points, at: Date.now() });
+			return points;
+		});
+	}
+
+	/**
+	 * Historique de la cagnotte globale, même granularité que celui d'un
+	 * streamer.
+	 *
+	 * Il vit dans un fichier à part, qui n'a pas besoin du décompte groupé pour
+	 * être atteint : une touche « Cagnotte globale » posée seule ne déclenche
+	 * donc jamais le téléchargement des 244 ko de l'overview.
+	 */
+	async globalHistory(): Promise<number[] | null> {
+		if (this.#globalHistory && Date.now() - this.#globalHistory.at < HISTORY_TTL_MS) {
+			return this.#globalHistory.value;
+		}
+
+		return this.#once("history:global", async () => {
+			const id = await this.eventId();
+			const raw = await getMetrics<RawGlobalMetrics>(`/metrics/${encodeURIComponent(id)}/global.json`);
+			const points = toPoints(raw.graph?.donations?.all);
+
+			this.#globalHistory = { value: points, at: Date.now() };
 			return points;
 		});
 	}

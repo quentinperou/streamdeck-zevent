@@ -1,7 +1,7 @@
 # ZEvent pour Stream Deck
 
 [![Build](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml/badge.svg)](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-1.4.0-00BD00)](https://github.com/quentinperou/streamdeck-zevent/releases)
+[![Version](https://img.shields.io/badge/version-1.5.0-00BD00)](https://github.com/quentinperou/streamdeck-zevent/releases)
 [![Licence](https://img.shields.io/badge/licence-MIT-00BD00)](LICENSE)
 
 Affiche les cagnottes du [ZEvent](https://zevent.fr/) sur les touches d'un Stream Deck, et ouvre la
@@ -35,17 +35,19 @@ affichée a plus de trois minutes.
 Chaque touche déclenche une action au clic et une autre à l'appui maintenu
 (500 ms). Les deux se règlent séparément, dans la même liste :
 
-| | Cagnotte streamer | Palier de dons |
-| --- | --- | --- |
-| Ouvrir la chaîne Twitch | ✓ | ✓ |
-| Ouvrir la page de don | ✓ | ✓ |
-| Afficher / masquer le graphique | ✓ | |
-| Afficher le nom du palier | | ✓ |
-| Ne rien faire | ✓ | ✓ |
+| | Cagnotte streamer | Cagnotte globale | Palier de dons |
+| --- | --- | --- | --- |
+| Ouvrir la chaîne Twitch | ✓ | | ✓ |
+| Ouvrir la page de don | ✓ | ✓ | ✓ |
+| Ouvrir zevent.fr | | ✓ | |
+| Afficher / masquer le graphique | ✓ | ✓ | |
+| Afficher le nom du palier | | | ✓ |
+| Ne rien faire | ✓ | ✓ | ✓ |
 
 Par défaut, l'appui court montre quelque chose et l'appui long emmène ailleurs :
-le graphique puis la chaîne Twitch sur une cagnotte, le nom du palier puis la
-page de don sur un palier.
+le graphique puis la chaîne Twitch sur une cagnotte de streamer, le graphique
+puis la page de don sur la cagnotte globale, le nom du palier puis la page de
+don sur un palier.
 
 L'action longue se déclenche **au seuil**, pas au relâchement : sans cela rien
 n'indiquerait qu'on a assez appuyé, et relâcher plus tôt ne permettrait pas
@@ -58,15 +60,22 @@ savoir ce qu'on vise.
 
 ### Courbe des dons
 
-Un appui bascule une touche **Cagnotte streamer** sur la progression de sa
-cagnotte depuis le début de l'édition ; le même appui la range. Le montant
-reste affiché au-dessus et continue de se rafraîchir toutes les minutes ; les
-barres avancent toutes les dix minutes, granularité de la source.
+Un appui bascule une touche **Cagnotte streamer** ou **Cagnotte globale** sur la
+progression de sa cagnotte depuis le début de l'édition ; le même appui la
+range. Le montant reste affiché au-dessus et continue de se rafraîchir toutes
+les minutes ; les barres avancent toutes les dix minutes, granularité de la
+source.
 
 Cet historique n'existe **que chez InGDoc** : l'API du ZEvent ne publie que le
 montant courant. Si le fichier ne répond pas, la touche garde son affichage
 normal plutôt que de montrer une courbe vide. Retirer l'option des deux menus
 d'appui ramène également la touche à la normale.
+
+La courbe globale vient d'un fichier distinct de celles des streamers, et qui
+ventile les dons entre la LAN et le distanciel : seule leur somme correspond au
+total affiché par le ZEvent. Elle n'a en revanche besoin d'aucun autre appel —
+une touche **Cagnotte globale** posée seule ne télécharge jamais les 244 ko du
+décompte des paliers.
 
 ### Format des chiffres
 
@@ -176,7 +185,8 @@ choisie :
 | `api.evenmorestats.fr/events` | éditions, pour trouver l'année en cours par ses dates | ~3 ko |
 | `…/events/<id>/donation_goals/overview` | décompte des paliers des 338, en un appel | ~244 ko |
 | `…/participations/<pid>/donation_goals` | paliers d'un streamer, chez InGDoc | ~3 ko |
-| `evenmorestats-cache…/metrics/<ev>/streamers/<id>.json` | historique des dons, un point toutes les 10 min | ~9 ko |
+| `evenmorestats-cache…/metrics/<ev>/streamers/<id>.json` | historique des dons d'un streamer, un point toutes les 10 min | ~9 ko |
+| `evenmorestats-cache…/metrics/<ev>/global.json` | historique de la cagnotte globale, même cadence | ~27 ko |
 
 Dans les deux cas, seuls les streamers réellement posés sur une touche
 « palier » sont interrogés, jamais les 338. L'édition en cours se déduit des

@@ -422,6 +422,50 @@ export function renderTotalKey(options: TotalKeyOptions): string {
 	return toDataUri(body);
 }
 
+export type TotalGraphKeyOptions = {
+	label: string;
+	amount: string;
+	/** Cumul de la cagnotte, du début de l'édition à maintenant. */
+	points: number[];
+	viewers: string | null;
+	stale: boolean;
+};
+
+/**
+ * Même découpe que la courbe d'un streamer, mais la répartition des couleurs
+ * de la touche globale est conservée : intitulé vert, montant blanc. Les barres
+ * restent vertes — c'est la seule couleur d'accent de la palette.
+ */
+export function renderTotalGraphKey(options: TotalGraphKeyOptions): string {
+	const { label, amount, points, viewers, stale } = options;
+
+	const labelSize = fitFontSize(label, CONTENT_WIDTH, 15, 10);
+	const amountSize = fitFontSize(amount, CONTENT_WIDTH, 28, 12);
+
+	let body = background(null);
+	body += text(truncate(label, CONTENT_WIDTH, labelSize), {
+		y: 24,
+		size: labelSize,
+		fill: COLORS.amount,
+	});
+	body += text(amount, {
+		y: centeredBaseline(42, amountSize),
+		size: amountSize,
+		fill: COLORS.name,
+	});
+	body += sparkline(points);
+
+	if (viewers) {
+		const size = fitFontSize(viewers, CONTENT_WIDTH, 12, 9);
+		body += text(truncate(viewers, CONTENT_WIDTH, size), { y: 133, size, fill: COLORS.muted });
+	}
+
+	body += statusBar(COLORS.live);
+	if (stale) body += staleDot();
+
+	return toDataUri(body);
+}
+
 /** Alignée sur la marge du texte : une jauge plus large que les mots au-dessus se verrait. */
 const BAR = { x: PADDING, y: 84, width: CONTENT_WIDTH, height: 12, radius: 3 };
 

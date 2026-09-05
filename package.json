@@ -1,6 +1,6 @@
 {
   "name": "fr.quentinperou.zevent",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "ZEvent donation totals on your Stream Deck",
   "scripts": {
     "build": "rollup -c",

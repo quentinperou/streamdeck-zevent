@@ -4,7 +4,14 @@ import { join } from "node:path";
 
 import { formatAmount, formatViewers, type NumberFormat } from "../src/format";
 import { goals, pickGoal, progressToward } from "../src/goals";
-import { renderGoalKey, renderMessageKey, renderStreamerKey, renderTotalKey } from "../src/render";
+import { ingdoc } from "../src/ingdoc";
+import {
+	renderGoalKey,
+	renderMessageKey,
+	renderStreamerKey,
+	renderTotalGraphKey,
+	renderTotalKey,
+} from "../src/render";
 import { zevent } from "../src/zevent";
 
 const OUT = process.argv[2] ?? ".";
@@ -70,6 +77,21 @@ async function main(): Promise<void> {
 			}),
 		);
 	}
+	const globalPoints = await ingdoc.globalHistory().catch(() => null);
+	console.log("historique  :", globalPoints ? `${globalPoints.length} points` : "indisponible");
+	if (globalPoints && globalPoints.length > 1) {
+		write(
+			"key-total-graph",
+			renderTotalGraphKey({
+				label: "ZEVENT",
+				amount: formatAmount(totals.donation, totals.donationText, "full"),
+				points: globalPoints,
+				viewers: `${formatViewers(totals.viewers, "full")} viewers`,
+				stale: false,
+			}),
+		);
+	}
+
 	write("key-empty", renderMessageKey("Choisir un streamer"));
 	write("key-error", renderMessageKey("ZEvent injoignable", "warning"));
 

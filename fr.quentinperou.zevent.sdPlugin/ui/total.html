@@ -33,11 +33,25 @@
 		</div>
 
 		<div class="row">
-			<label for="click">Au clic</label>
+			<label for="click">Appui court</label>
 			<div class="field">
 				<select id="click">
+					<option value="graph">Afficher / masquer le graphique</option>
 					<option value="donation">Ouvrir la page de don</option>
 					<option value="site">Ouvrir zevent.fr</option>
+					<option value="none">Ne rien faire</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="row">
+			<label for="long">Appui long</label>
+			<div class="field">
+				<select id="long">
+					<option value="graph">Afficher / masquer le graphique</option>
+					<option value="donation">Ouvrir la page de don</option>
+					<option value="site">Ouvrir zevent.fr</option>
+					<option value="none">Ne rien faire</option>
 				</select>
 			</div>
 		</div>
@@ -130,6 +144,11 @@
 					save();
 				});
 
+				$("long").addEventListener("change", function () {
+					settings.longPressAction = $("long").value;
+					save();
+				});
+
 				$("refresh").addEventListener("click", function () {
 					$("refresh").disabled = true;
 					window.PI.sendToPlugin({ event: "refresh" });
@@ -143,7 +162,8 @@
 					$("label").value = settings.label || "";
 					$("show-viewers").checked = settings.showViewers !== false;
 					$("format").value = settings.numberFormat === "short" ? "short" : "full";
-					$("click").value = settings.clickAction === "site" ? "site" : "donation";
+					$("click").value = settings.clickAction || "graph";
+					$("long").value = settings.longPressAction || "donation";
 					fillPreview();
 					window.PI.sendToPlugin({ event: "getCatalogue" });
 				};
