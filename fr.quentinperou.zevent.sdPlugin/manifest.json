@@ -1,6 +1,6 @@
 {
 	"Name": "ZEvent",
-	"Version": "1.2.0.0",
+	"Version": "1.2.1.0",
 	"Author": "QuentinPerou",
 	"Description": "Affiche les cagnottes du ZEvent sur vos touches et ouvre la chaîne Twitch du streamer d'un simple appui.",
 	"Category": "ZEvent",
@@ -69,7 +69,7 @@
 			"PropertyInspectorPath": "ui/goal.html"
 		}
 	],
-	"SDKVersion": 2,
+	"SDKVersion": 3,
 	"Software": {
 		"MinimumVersion": "6.9"
 	},
