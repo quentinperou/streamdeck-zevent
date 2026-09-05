@@ -1,0 +1,6 @@
+node_modules/
+fr.quentinperou.zevent.sdPlugin/bin/
+*.streamDeckPlugin
+*.log
+.preview/
+fr.quentinperou.zevent.sdPlugin/logs/

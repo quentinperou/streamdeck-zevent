@@ -1,0 +1,66 @@
+{
+	"Name": "ZEvent",
+	"Version": "1.0.0.0",
+	"Author": "QuentinPerou",
+	"Description": "Affiche les cagnottes du ZEvent sur vos touches et ouvre la chaîne Twitch du streamer d'un simple appui.",
+	"Category": "ZEvent",
+	"CategoryIcon": "imgs/category-icon",
+	"CodePath": "bin/plugin.js",
+	"UUID": "fr.quentinperou.zevent",
+	"Icon": "imgs/plugin-icon",
+	"URL": "https://zevent.fr",
+	"Actions": [
+		{
+			"Icon": "imgs/actions/streamer/action-icon",
+			"Name": "Cagnotte streamer",
+			"UUID": "fr.quentinperou.zevent.streamer",
+			"Tooltip": "Cagnotte d'un streamer du ZEvent. Appui : ouvre sa chaîne Twitch.",
+			"SupportedInMultiActions": false,
+			"Controllers": ["Keypad"],
+			"States": [
+				{
+					"Image": "imgs/actions/streamer/key",
+					"Name": "Default",
+					"Title": "",
+					"TitleAlignment": "middle"
+				}
+			],
+			"PropertyInspectorPath": "ui/streamer.html"
+		},
+		{
+			"Icon": "imgs/actions/total/action-icon",
+			"Name": "Cagnotte globale",
+			"UUID": "fr.quentinperou.zevent.total",
+			"Tooltip": "Cagnotte totale du ZEvent. Appui : ouvre la page de don.",
+			"SupportedInMultiActions": false,
+			"Controllers": ["Keypad"],
+			"States": [
+				{
+					"Image": "imgs/actions/total/key",
+					"Name": "Default",
+					"Title": "",
+					"TitleAlignment": "middle"
+				}
+			],
+			"PropertyInspectorPath": "ui/total.html"
+		}
+	],
+	"SDKVersion": 2,
+	"Software": {
+		"MinimumVersion": "6.5"
+	},
+	"OS": [
+		{
+			"Platform": "windows",
+			"MinimumVersion": "10"
+		},
+		{
+			"Platform": "mac",
+			"MinimumVersion": "10.15"
+		}
+	],
+	"Nodejs": {
+		"Version": "20",
+		"Debug": "enabled"
+	}
+}

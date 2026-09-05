@@ -1,0 +1,38 @@
+{
+  "name": "fr.quentinperou.zevent",
+  "version": "1.0.0",
+  "description": "ZEvent donation totals on your Stream Deck",
+  "scripts": {
+    "build": "rollup -c",
+    "build:prod": "rollup -c --environment NODE_ENV:production",
+    "watch": "rollup -c -w --watch.onEnd=\"streamdeck restart fr.quentinperou.zevent\"",
+    "icons": "node scripts/make-icons.mjs",
+    "pack": "streamdeck pack fr.quentinperou.zevent.sdPlugin --force",
+    "link": "streamdeck link fr.quentinperou.zevent.sdPlugin",
+    "preview": "tsc scripts/preview.ts --outDir .preview --module commonjs --target ES2022 --moduleResolution node --skipLibCheck --types node && node .preview/scripts/preview.js .preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "streamdeck",
+    "zevent",
+    "twitch",
+    "charity"
+  ],
+  "author": "QuentinPerou",
+  "license": "MIT",
+  "dependencies": {
+    "@elgato/streamdeck": "^2.1.0"
+  },
+  "devDependencies": {
+    "@elgato/cli": "^1.7.4",
+    "@rollup/plugin-commonjs": "^29.0.2",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^12.3.0",
+    "@types/node": "^20.0.0",
+    "rollup": "^4.63.1",
+    "sharp": "^0.34.5",
+    "tslib": "^2.8.1",
+    "typescript": "^5.0.0"
+  }
+}

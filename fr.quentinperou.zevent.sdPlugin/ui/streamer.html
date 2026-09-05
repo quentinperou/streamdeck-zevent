@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8" />
+		<title>Cagnotte streamer</title>
+		<link rel="stylesheet" href="css/pi.css" />
+	</head>
+	<body>
+		<div class="row">
+			<label for="search">Recherche</label>
+			<div class="field">
+				<input id="search" type="search" placeholder="Nom du streamer…" autocomplete="off" spellcheck="false" />
+			</div>
+		</div>
+
+		<div class="row">
+			<label for="streamer">Streamer</label>
+			<div class="field">
+				<select id="streamer" disabled>
+					<option value="">Chargement…</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="row">
+			<label for="sort">Trier par</label>
+			<div class="field">
+				<select id="sort">
+					<option value="donation">Cagnotte</option>
+					<option value="name">Nom</option>
+					<option value="viewers">Viewers</option>
+					<option value="live">En direct d'abord</option>
+				</select>
+			</div>
+		</div>
+
+		<div id="preview" class="preview empty">Aucun streamer sélectionné</div>
+
+		<hr />
+
+		<div class="row">
+			<label>Affichage</label>
+			<div class="field checks">
+				<label class="check"><input id="show-avatar" type="checkbox" checked /> Avatar en fond</label>
+				<label class="check"><input id="show-viewers" type="checkbox" checked /> Viewers</label>
+			</div>
+		</div>
+
+		<div class="row">
+			<label for="click">Au clic</label>
+			<div class="field">
+				<select id="click">
+					<option value="twitch">Ouvrir la chaîne Twitch</option>
+					<option value="donation">Ouvrir la page de don</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="footer">
+			<button id="refresh" type="button">↺ Rafraîchir</button>
+			<div id="status" class="status"></div>
+		</div>
+
+		<script src="js/sd-pi.js"></script>
+		<script>
+			(function () {
+				"use strict";
+
+				var $ = function (id) {
+					return document.getElementById(id);
+				};
+
+				var catalogue = [];
+				var settings = {};
+				var loaded = false;
+
+				/** Recherche insensible à la casse et aux accents. */
+				function fold(text) {
+					return String(text || "")
+						.normalize("NFD")
+						.replace(/[̀-ͯ]/g, "")
+						.toLowerCase();
+				}
+
+				function formatCount(value) {
+					return String(Math.round(value || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+				}
+
+				function sorted(list) {
+					var mode = $("sort").value;
+					var copy = list.slice();
+					copy.sort(function (a, b) {
+						if (mode === "name") return a.display.localeCompare(b.display, "fr");
+						if (mode === "viewers") return b.viewers - a.viewers || b.donationValue - a.donationValue;
+						if (mode === "live") {
+							if (a.online !== b.online) return a.online ? -1 : 1;
+							return b.donationValue - a.donationValue;
+						}
+						return b.donationValue - a.donationValue;
+					});
+					return copy;
+				}
+
+				function find(login) {
+					for (var i = 0; i < catalogue.length; i++) {
+						if (catalogue[i].login === login) return catalogue[i];
+					}
+					return null;
+				}
+
+				function label(streamer) {
+					return (streamer.online ? "🔴 " : "") + streamer.display + " — " + streamer.donation;
+				}
+
+				function fillSelect() {
+					var select = $("streamer");
+					var query = fold($("search").value.trim());
+					var matches = sorted(catalogue).filter(function (streamer) {
+						if (!query) return true;
+						return fold(streamer.display).indexOf(query) !== -1 || streamer.login.indexOf(query) !== -1;
+					});
+
+					select.innerHTML = "";
+
+					var placeholder = document.createElement("option");
+					placeholder.value = "";
+					placeholder.textContent = catalogue.length
+						? matches.length
+							? "— Choisir un streamer —"
+							: "Aucun résultat"
+						: "Chargement…";
+					select.appendChild(placeholder);
+
+					// Le choix courant reste toujours proposé, même filtré par la
+					// recherche : taper dans le champ ne doit jamais l'effacer.
+					var current = settings.login || "";
+					var listed = matches.some(function (streamer) {
+						return streamer.login === current;
+					});
+					if (current && !listed) {
+						var kept = find(current);
+						var option = document.createElement("option");
+						option.value = current;
+						option.textContent = kept ? label(kept) + " (sélection)" : current + " (hors ZEvent)";
+						select.appendChild(option);
+					}
+
+					matches.forEach(function (streamer) {
+						var option = document.createElement("option");
+						option.value = streamer.login;
+						option.textContent = label(streamer);
+						select.appendChild(option);
+					});
+
+					select.value = current;
+					select.disabled = catalogue.length === 0;
+				}
+
+				function fillPreview() {
+					var preview = $("preview");
+					var streamer = find(settings.login);
+
+					if (!settings.login) {
+						preview.className = "preview empty";
+						preview.textContent = "Aucun streamer sélectionné";
+						return;
+					}
+					if (!streamer) {
+						preview.className = "preview empty";
+						preview.textContent = loaded
+							? settings.login + " ne participe pas au ZEvent"
+							: "Chargement…";
+						return;
+					}
+
+					preview.className = "preview";
+					preview.innerHTML = "";
+
+					var avatar = document.createElement("img");
+					avatar.alt = "";
+					if (streamer.avatar) avatar.src = streamer.avatar;
+					preview.appendChild(avatar);
+
+					var info = document.createElement("div");
+					info.className = "info";
+
+					var name = document.createElement("div");
+					name.className = "name";
+					name.textContent = streamer.display;
+
+					var amount = document.createElement("div");
+					amount.className = "amount";
+					amount.textContent = streamer.donation;
+
+					var meta = document.createElement("div");
+					meta.className = "meta";
+					var dot = document.createElement("span");
+					dot.className = streamer.online ? "dot live" : "dot";
+					meta.appendChild(dot);
+					meta.appendChild(
+						document.createTextNode(
+							streamer.online ? formatCount(streamer.viewers) + " viewers" : "hors ligne",
+						),
+					);
+
+					info.appendChild(name);
+					info.appendChild(amount);
+					info.appendChild(meta);
+					preview.appendChild(info);
+				}
+
+				function fillStatus(payload) {
+					var status = $("status");
+					if (payload && payload.error && !payload.ready) {
+						status.className = "status error";
+						status.textContent = "ZEvent injoignable";
+						return;
+					}
+					var live = catalogue.filter(function (streamer) {
+						return streamer.online;
+					}).length;
+					status.className = payload && payload.stale ? "status error" : "status";
+					status.textContent = catalogue.length
+						? catalogue.length + " streamers · " + live + " en direct"
+						: "";
+				}
+
+				function save() {
+					window.PI.setSettings(settings);
+				}
+
+				$("search").addEventListener("input", fillSelect);
+				$("search").addEventListener("keydown", function (event) {
+					if (event.key !== "Enter") return;
+					event.preventDefault();
+
+					// Entrée valide la première proposition : choisir sans lâcher le clavier.
+					var select = $("streamer");
+					if (select.options.length < 2) return;
+
+					settings.login = select.options[1].value;
+					save();
+					fillSelect();
+					fillPreview();
+				});
+
+				$("sort").addEventListener("change", fillSelect);
+
+				$("streamer").addEventListener("change", function () {
+					settings.login = $("streamer").value;
+					save();
+					fillPreview();
+				});
+
+				$("show-avatar").addEventListener("change", function () {
+					settings.showAvatar = $("show-avatar").checked;
+					save();
+				});
+
+				$("show-viewers").addEventListener("change", function () {
+					settings.showViewers = $("show-viewers").checked;
+					save();
+				});
+
+				$("click").addEventListener("change", function () {
+					settings.clickAction = $("click").value;
+					save();
+				});
+
+				$("refresh").addEventListener("click", function () {
+					$("refresh").disabled = true;
+					$("status").textContent = "Mise à jour…";
+					window.PI.sendToPlugin({ event: "refresh" });
+					setTimeout(function () {
+						$("refresh").disabled = false;
+					}, 3000);
+				});
+
+				window.PI.onSettings = function (next) {
+					settings = next || {};
+					$("show-avatar").checked = settings.showAvatar !== false;
+					$("show-viewers").checked = settings.showViewers !== false;
+					$("click").value = settings.clickAction === "donation" ? "donation" : "twitch";
+					fillSelect();
+					fillPreview();
+					window.PI.sendToPlugin({ event: "getCatalogue" });
+				};
+
+				window.PI.on("catalogue", function (payload) {
+					catalogue = payload.streamers || [];
+					loaded = Boolean(payload.ready);
+					$("refresh").disabled = false;
+					fillSelect();
+					fillPreview();
+					fillStatus(payload);
+				});
+			})();
+		</script>
+	</body>
+</html>

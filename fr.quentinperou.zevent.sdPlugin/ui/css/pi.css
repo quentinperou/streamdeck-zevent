@@ -1,0 +1,222 @@
+:root {
+	--bg: #2d2d2d;
+	--text: #d8d8d8;
+	--muted: #969696;
+	--field: #3d3d3d;
+	--field-hover: #4a4a4a;
+	--line: #3d3d3d;
+	--gold: #ffd447;
+	--live: #e4003c;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	padding: 12px 14px 18px;
+	background: var(--bg);
+	color: var(--text);
+	font: 400 12px/1.45 "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.row > label {
+	flex: 0 0 86px;
+	text-align: right;
+	color: var(--muted);
+	font-size: 11px;
+	line-height: 1.2;
+}
+
+.row > .field {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+input[type="search"],
+input[type="text"],
+select {
+	width: 100%;
+	height: 26px;
+	padding: 0 7px;
+	border: none;
+	border-radius: 4px;
+	background: var(--field);
+	color: var(--text);
+	font: inherit;
+	outline: none;
+}
+
+input[type="search"]::placeholder {
+	color: #7a7a7a;
+}
+
+input[type="search"]:focus,
+select:focus {
+	box-shadow: 0 0 0 1px #6f6f6f inset;
+}
+
+select {
+	height: 26px;
+	cursor: pointer;
+	appearance: none;
+	background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+		linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+	background-position: calc(100% - 14px) 11px, calc(100% - 9px) 11px;
+	background-size: 5px 5px, 5px 5px;
+	background-repeat: no-repeat;
+	padding-right: 24px;
+}
+
+select:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.checks {
+	display: flex;
+	gap: 14px;
+	flex-wrap: wrap;
+}
+
+.check {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+	cursor: pointer;
+	font-size: 11px;
+}
+
+.check input {
+	margin: 0;
+	accent-color: var(--gold);
+	cursor: pointer;
+}
+
+hr {
+	border: none;
+	border-top: 1px solid var(--line);
+	margin: 14px 0 12px;
+}
+
+/* Carte d'aperçu : ce que la touche affichera, avant de valider le choix. */
+.preview {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 9px 10px;
+	margin: 2px 0 10px;
+	border-radius: 5px;
+	background: #262626;
+	min-height: 54px;
+}
+
+.preview.empty {
+	color: var(--muted);
+	font-style: italic;
+	justify-content: center;
+}
+
+.preview img {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	flex: 0 0 36px;
+	background: var(--field);
+	object-fit: cover;
+}
+
+.preview .info {
+	min-width: 0;
+	flex: 1 1 auto;
+}
+
+.preview .name {
+	font-weight: 600;
+	font-size: 12px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.preview .amount {
+	color: var(--gold);
+	font-size: 15px;
+	font-weight: 700;
+	line-height: 1.25;
+}
+
+.preview .meta {
+	color: var(--muted);
+	font-size: 11px;
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: #5a5a5a;
+	flex: 0 0 7px;
+}
+
+.dot.live {
+	background: var(--live);
+}
+
+.footer {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 12px;
+}
+
+button {
+	height: 26px;
+	padding: 0 12px;
+	border: none;
+	border-radius: 4px;
+	background: var(--field);
+	color: var(--text);
+	font: inherit;
+	cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+	background: var(--field-hover);
+}
+
+button:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.status {
+	flex: 1 1 auto;
+	color: var(--muted);
+	font-size: 10.5px;
+	text-align: right;
+	line-height: 1.3;
+}
+
+.status.error {
+	color: #f0a020;
+}
+
+.hint {
+	color: var(--muted);
+	font-size: 10.5px;
+	margin: -3px 0 10px 94px;
+}

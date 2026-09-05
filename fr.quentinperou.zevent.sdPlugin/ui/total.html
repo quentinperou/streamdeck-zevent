@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8" />
+		<title>Cagnotte globale</title>
+		<link rel="stylesheet" href="css/pi.css" />
+	</head>
+	<body>
+		<div id="preview" class="preview empty">Chargement…</div>
+
+		<div class="row">
+			<label for="label">Intitulé</label>
+			<div class="field">
+				<input id="label" type="text" placeholder="ZEVENT" maxlength="16" autocomplete="off" />
+			</div>
+		</div>
+
+		<div class="row">
+			<label>Affichage</label>
+			<div class="field checks">
+				<label class="check"><input id="show-viewers" type="checkbox" checked /> Viewers</label>
+			</div>
+		</div>
+
+		<div class="row">
+			<label for="click">Au clic</label>
+			<div class="field">
+				<select id="click">
+					<option value="donation">Ouvrir la page de don</option>
+					<option value="site">Ouvrir zevent.fr</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="footer">
+			<button id="refresh" type="button">↺ Rafraîchir</button>
+			<div id="status" class="status"></div>
+		</div>
+
+		<script src="js/sd-pi.js"></script>
+		<script>
+			(function () {
+				"use strict";
+
+				var $ = function (id) {
+					return document.getElementById(id);
+				};
+
+				var settings = {};
+
+				function formatCount(value) {
+					return String(Math.round(value || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+				}
+
+				function save() {
+					window.PI.setSettings(settings);
+				}
+
+				$("label").addEventListener("input", function () {
+					settings.label = $("label").value;
+					save();
+				});
+
+				$("show-viewers").addEventListener("change", function () {
+					settings.showViewers = $("show-viewers").checked;
+					save();
+				});
+
+				$("click").addEventListener("change", function () {
+					settings.clickAction = $("click").value;
+					save();
+				});
+
+				$("refresh").addEventListener("click", function () {
+					$("refresh").disabled = true;
+					window.PI.sendToPlugin({ event: "refresh" });
+					setTimeout(function () {
+						$("refresh").disabled = false;
+					}, 3000);
+				});
+
+				window.PI.onSettings = function (next) {
+					settings = next || {};
+					$("label").value = settings.label || "";
+					$("show-viewers").checked = settings.showViewers !== false;
+					$("click").value = settings.clickAction === "site" ? "site" : "donation";
+					window.PI.sendToPlugin({ event: "getCatalogue" });
+				};
+
+				window.PI.on("catalogue", function (payload) {
+					$("refresh").disabled = false;
+
+					var preview = $("preview");
+					var status = $("status");
+
+					if (!payload.totals) {
+						preview.className = "preview empty";
+						preview.textContent = payload.error ? "ZEvent injoignable" : "Chargement…";
+						status.className = "status";
+						status.textContent = "";
+						return;
+					}
+
+					preview.className = "preview";
+					preview.innerHTML = "";
+
+					var info = document.createElement("div");
+					info.className = "info";
+
+					var name = document.createElement("div");
+					name.className = "name";
+					name.textContent = $("label").value.trim() || "ZEVENT";
+
+					var amount = document.createElement("div");
+					amount.className = "amount";
+					amount.textContent = payload.totals.donationText;
+
+					var meta = document.createElement("div");
+					meta.className = "meta";
+					meta.appendChild(document.createTextNode(formatCount(payload.totals.viewers) + " viewers"));
+
+					info.appendChild(name);
+					info.appendChild(amount);
+					info.appendChild(meta);
+					preview.appendChild(info);
+
+					var live = (payload.streamers || []).filter(function (streamer) {
+						return streamer.online;
+					}).length;
+					status.className = payload.stale ? "status error" : "status";
+					status.textContent = live + " streamers en direct";
+				});
+			})();
+		</script>
+	</body>
+</html>
