@@ -64,6 +64,12 @@ const COLORS = {
 	/** Rail de la barre de progression : lisible sur le fond sans le concurrencer. */
 	track: "#2E2E2E",
 	stale: "#F0A020",
+	/**
+	 * Cadre des temps forts. Le blanc n'est pris par rien d'autre en aplat : le
+	 * vert se confondrait avec les montants, l'ambre avec la pastille « donnée
+	 * périmée » — deux sens pour une couleur, c'est un de trop.
+	 */
+	alert: "#FFFFFF",
 };
 
 /**
@@ -272,6 +278,27 @@ function staleDot(): string {
 	return `<circle cx="${SIZE - 12}" cy="12" r="4" fill="${COLORS.stale}"/>`;
 }
 
+/** Épaisseur du cadre de temps fort, en unités SVG — soit 3 pixels réels. */
+const ALERT_FRAME = 6;
+
+/**
+ * Cadre de temps fort : quatre `rect`, jamais un `stroke`. Le moteur de Stream
+ * Deck n'en dessine pas, et un contour absent ne se verrait qu'une fois le
+ * plugin installé.
+ *
+ * Il remplace le bandeau « en direct » plutôt que de s'y superposer : pendant
+ * un pic de dons, la chaîne est évidemment en direct.
+ */
+function alertFrame(): string {
+	const edge = ALERT_FRAME;
+	return (
+		`<rect x="0" y="0" width="${SIZE}" height="${edge}" fill="${COLORS.alert}"/>` +
+		`<rect x="0" y="${SIZE - edge}" width="${SIZE}" height="${edge}" fill="${COLORS.alert}"/>` +
+		`<rect x="0" y="${edge}" width="${edge}" height="${SIZE - edge * 2}" fill="${COLORS.alert}"/>` +
+		`<rect x="${SIZE - edge}" y="${edge}" width="${edge}" height="${SIZE - edge * 2}" fill="${COLORS.alert}"/>`
+	);
+}
+
 export type StreamerKeyOptions = {
 	name: string;
 	amount: string;
@@ -279,10 +306,15 @@ export type StreamerKeyOptions = {
 	online: boolean;
 	avatar: string | null;
 	stale: boolean;
+	/** Hausse en cours, déjà mise en forme. Cadre le visuel et remplace la légende. */
+	alert?: string | null;
 };
 
 export function renderStreamerKey(options: StreamerKeyOptions): string {
-	const { name, amount, viewers, online, avatar, stale } = options;
+	const { name, amount, online, avatar, stale, alert } = options;
+	// Le cadre dit « regarde », le montant dit pourquoi : la légende lui cède la
+	// place le temps du temps fort.
+	const viewers = alert ?? options.viewers;
 
 	const nameSize = fitFontSize(name, CONTENT_WIDTH, 17, 11);
 	const amountSize = fitFontSize(amount, CONTENT_WIDTH, 36, 14);
@@ -303,10 +335,10 @@ export function renderStreamerKey(options: StreamerKeyOptions): string {
 		body += text(truncate(viewers, CONTENT_WIDTH, size), {
 			y: 121,
 			size,
-			fill: COLORS.muted,
+			fill: alert ? COLORS.alert : COLORS.muted,
 		});
 	}
-	body += statusBar(online ? COLORS.live : COLORS.offline);
+	body += alert ? alertFrame() : statusBar(online ? COLORS.live : COLORS.offline);
 	if (stale) body += staleDot();
 
 	return toDataUri(body);
@@ -352,10 +384,13 @@ export type StreamerGraphKeyOptions = {
 	online: boolean;
 	avatar: string | null;
 	stale: boolean;
+	/** Hausse en cours, déjà mise en forme. Cadre le visuel et remplace la légende. */
+	alert?: string | null;
 };
 
 export function renderStreamerGraphKey(options: StreamerGraphKeyOptions): string {
-	const { name, amount, points, caption, online, avatar, stale } = options;
+	const { name, amount, points, online, avatar, stale, alert } = options;
+	const caption = alert ?? options.caption;
 
 	const nameSize = fitFontSize(name, CONTENT_WIDTH, 15, 10);
 	const amountSize = fitFontSize(amount, CONTENT_WIDTH, 26, 12);
@@ -375,10 +410,14 @@ export function renderStreamerGraphKey(options: StreamerGraphKeyOptions): string
 
 	if (caption) {
 		const size = fitFontSize(caption, CONTENT_WIDTH, 12, 9);
-		body += text(truncate(caption, CONTENT_WIDTH, size), { y: 133, size, fill: COLORS.muted });
+		body += text(truncate(caption, CONTENT_WIDTH, size), {
+			y: 133,
+			size,
+			fill: alert ? COLORS.alert : COLORS.muted,
+		});
 	}
 
-	body += statusBar(online ? COLORS.live : COLORS.offline);
+	body += alert ? alertFrame() : statusBar(online ? COLORS.live : COLORS.offline);
 	if (stale) body += staleDot();
 
 	return toDataUri(body);

@@ -35,6 +35,7 @@ Avant de proposer quoi que ce soit : `sync-version -- --check`, `typecheck`,
 | `src/goals.ts` | Paliers de dons : choix de la source, repli, cache par couple streamer/source |
 | `src/ingdoc.ts` | Source alternative InGDoc : résolution de l'édition, décompte groupé, historiques |
 | `src/render.ts` | Visuels de touche en SVG |
+| `src/spike.ts` | Temps forts : rythme propre à chaque streamer, sans requête supplémentaire |
 | `src/format.ts` | Nombres complets ou abrégés |
 | `src/key-image.ts` | Évite de réenvoyer une image identique |
 | `src/press.ts` | Distingue appui court et appui long, absents du SDK |
@@ -95,6 +96,14 @@ depuis `willAppear` et `didReceiveSettings`, que Stream Deck pousse déjà.
 **Un test qui s'arrête à l'enregistrement ne prouve rien.** Pour reproduire un
 plantage, le faux hôte doit aussi envoyer les `willAppear` : sans eux, tout le
 code de rendu reste inexploré.
+
+**Le rythme de référence des temps forts est un débit, pas une hausse.** Le
+plugin ne sonde que si une touche est visible : au réveil, l'écart entre deux
+relevés couvre parfois des heures, et la hausse accumulée n'a plus rien d'un pic.
+`spike.ts` travaille donc en euros par minute, ignore les intervalles hors de
+[30 s, 5 min] et repart de zéro au-delà. Le cadre s'éteint au premier redessin
+qui suit son échéance, donc jusqu'à une minute plus tard : c'est volontaire, un
+minuteur par touche coûterait plus que ce qu'il apporte.
 
 **Les icônes sont générées.** Modifier `scripts/make-icons.mjs`, pas les PNG.
 

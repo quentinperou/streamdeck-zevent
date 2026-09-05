@@ -77,6 +77,31 @@ total affiché par le ZEvent. Elle n'a en revanche besoin d'aucun autre appel �
 une touche **Cagnotte globale** posée seule ne télécharge jamais les 244 ko du
 décompte des paliers.
 
+### Temps forts
+
+Quand la cagnotte d'un streamer s'emballe, sa touche s'entoure d'un **cadre
+blanc** et annonce la hausse à la place du nombre de viewers. Le cadre s'efface
+de lui-même trois minutes après le dernier pic.
+
+Le seuil ne peut pas être un montant : sur l'édition 2026, le plus gros pic d'un
+petit streamer (212 € en dix minutes) passe sous le rythme *ordinaire* d'un gros
+(704 €). Un seuil en euros décorerait toujours les mêmes chaînes. Chaque
+streamer est donc comparé à **son propre rythme des vingt dernières minutes**,
+et une hausse le dépassant six fois déclenche le cadre. Les pics réels sortent
+entre 19 et 239 fois au-dessus : la marge est large. Un plancher de 20 € par
+minute évite qu'une chaîne au repos s'allume au premier don de deux euros.
+
+Rejoué sur les relevés de l'édition, cela donne une dizaine d'allumages par gros
+streamer sur les trois jours, et un seul pour une petite chaîne — assez rare
+pour vouloir dire quelque chose.
+
+Rien de tout cela ne coûte une requête : la réponse du ZEvent porte déjà les 338
+cagnottes à chaque sondage, et la variation se lit à la minute plutôt qu'aux dix
+minutes de l'historique. En contrepartie il faut **une dizaine de minutes de
+sondages** avant le premier verdict : au démarrage, aucun rythme de référence
+n'existe encore, et le plugin préfère ne rien signaler qu'inventer. La case
+*Temps forts* désactive l'ensemble.
+
 ### Format des chiffres
 
 Chaque action propose deux écritures, montants et viewers compris :

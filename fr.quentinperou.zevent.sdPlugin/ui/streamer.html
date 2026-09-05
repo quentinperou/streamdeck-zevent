@@ -43,6 +43,7 @@
 			<div class="field checks">
 				<label class="check"><input id="show-avatar" type="checkbox" checked /> Avatar en fond</label>
 				<label class="check"><input id="show-viewers" type="checkbox" checked /> Viewers</label>
+				<label class="check"><input id="show-spikes" type="checkbox" checked /> Temps forts</label>
 			</div>
 		</div>
 
@@ -289,6 +290,11 @@
 					save();
 				});
 
+				$("show-spikes").addEventListener("change", function () {
+					settings.showSpikes = $("show-spikes").checked;
+					save();
+				});
+
 				$("format").addEventListener("change", function () {
 					settings.numberFormat = $("format").value;
 					save();
@@ -318,6 +324,7 @@
 					settings = next || {};
 					$("show-avatar").checked = settings.showAvatar !== false;
 					$("show-viewers").checked = settings.showViewers !== false;
+					$("show-spikes").checked = settings.showSpikes !== false;
 					$("format").value = settings.numberFormat === "short" ? "short" : "full";
 					$("click").value = settings.clickAction || "graph";
 					$("long").value = settings.longPressAction || "twitch";

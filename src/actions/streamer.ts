@@ -9,12 +9,13 @@ import type {
 	WillDisappearEvent,
 } from "@elgato/streamdeck";
 
-import { formatAmount, formatViewers, type NumberFormat } from "../format";
+import { formatAmount, formatViewers, groupDigits, type NumberFormat } from "../format";
 import { ingdoc } from "../ingdoc";
 import { KeyImageCache } from "../key-image";
 import { PressTracker } from "../press";
 import { renderMessageKey, renderStreamerGraphKey, renderStreamerKey } from "../render";
 import { safely } from "../safety";
+import { spikes } from "../spike";
 import { zevent } from "../zevent";
 
 /** Ce qu’un appui déclenche. « none » laisse la touche inerte. */
@@ -24,6 +25,8 @@ export type StreamerSettings = {
 	login?: string;
 	showAvatar?: boolean;
 	showViewers?: boolean;
+	/** Signaler les temps forts par un cadre. */
+	showSpikes?: boolean;
 	numberFormat?: NumberFormat;
 	/** Appui court. */
 	clickAction?: StreamerPressAction;
@@ -180,6 +183,13 @@ export class StreamerAction extends SingletonAction<StreamerSettings> {
 
 		const format = settings.numberFormat ?? "full";
 		const avatar = settings.showAvatar === false ? null : await zevent.avatar(streamer.login);
+
+		// Une hausse brutale par rapport au rythme propre du streamer : la touche
+		// le dit, et dit de combien.
+		const spike = settings.showSpikes === false ? null : spikes.get(streamer.login);
+		const alert = spike
+			? `+${formatAmount(spike.delta, `${groupDigits(spike.delta)} €`, format)}`
+			: null;
 		const viewers =
 			settings.showViewers === false
 				? null
@@ -202,6 +212,7 @@ export class StreamerAction extends SingletonAction<StreamerSettings> {
 						online: streamer.online,
 						avatar,
 						stale: zevent.isStale,
+						alert,
 					}),
 				);
 				return;
@@ -217,6 +228,7 @@ export class StreamerAction extends SingletonAction<StreamerSettings> {
 				online: streamer.online,
 				avatar,
 				stale: zevent.isStale,
+				alert,
 			}),
 		);
 	}

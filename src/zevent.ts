@@ -7,6 +7,8 @@
  * plugin Node, qui parle directement à l'API sans passer par un navigateur.
  */
 
+import { spikes } from "./spike";
+
 const API_URL = "https://zevent.fr/api/";
 const USER_AGENT = "streamdeck-zevent/1.0 (+https://github.com/quentinperou)";
 
@@ -229,6 +231,10 @@ class ZeventStore {
 			viewersText: normalizeSpaces(data.viewersCount?.formatted ?? "—"),
 		};
 		if (data.globalDonationUrl) this.#globalDonationUrl = data.globalDonationUrl;
+
+		// Les variations se lisent ici, au moment où le relevé arrive : c'est le
+		// seul endroit qui voit l'état précédent et le suivant.
+		spikes.observe(this.streamers);
 	}
 
 	#schedule(): void {

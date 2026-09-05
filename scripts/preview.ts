@@ -92,6 +92,22 @@ async function main(): Promise<void> {
 		);
 	}
 
+	// Temps fort : la hausse est forcée ici, la détection ayant besoin d'une
+	// dizaine de relevés espacés d'une minute pour se prononcer.
+	const vedette = samples[1] ?? samples[0]!;
+	write(
+		"key-alerte",
+		renderStreamerKey({
+			name: vedette.display,
+			amount: formatAmount(vedette.donation, vedette.donationText, "full"),
+			viewers: `${formatViewers(vedette.viewers, "full")} viewers`,
+			online: vedette.online,
+			avatar: await zevent.avatar(vedette.login),
+			stale: false,
+			alert: "+11 400 €",
+		}),
+	);
+
 	write("key-empty", renderMessageKey("Choisir un streamer"));
 	write("key-error", renderMessageKey("ZEvent injoignable", "warning"));
 
