@@ -9,6 +9,8 @@ chaîne Twitch du streamer d'un simple appui.
 
 BOURREZ LES DONS !!
 
+![Des touches Stream Deck affichant la cagnotte globale du ZEvent, les cagnottes de plusieurs streamers avec leur nombre de viewers, et deux jauges de progression vers un palier de dons](.github/apercu.png)
+
 ## Installation
 
 Récupérez le fichier `.streamDeckPlugin` de la
