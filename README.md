@@ -54,6 +54,25 @@ L'avancement se mesure **depuis le palier précédent**, pas depuis le premier
 euro : à 40 000 € pour un palier à 50 000 € qui suit celui de 40 000 €, la
 barre affiche 0 % et non 80 %. C'est l'effort restant qui intéresse.
 
+### Deux sources de paliers
+
+Les paliers viennent au choix de l'**API officielle du ZEvent** ou d'**InGDoc**
+([evenmorestats.fr](https://zevent.gdoc.fr/donation_goals/)), qui les publie
+plus complètement : sur 60 streamers observés, 8 % sont annoncés sans aucun
+palier par l'officiel alors qu'ils en ont une quinzaine — Mastu en a 15,
+l'API du ZEvent en renvoie 0.
+
+| Réglage | Comportement |
+| --- | --- |
+| **Auto** *(défaut)* | InGDoc, et repli sur l'officiel dès qu'il ne répond pas |
+| **InGDoc** | InGDoc seul — la touche signale l'indisponibilité plutôt que de basculer en douce |
+| **ZEvent** | l'API officielle seule |
+
+InGDoc permet en prime d'annoncer, dans le menu déroulant, **le nombre de
+paliers de chaque streamer** — un seul appel couvre les 338 participants.
+L'API officielle ne les expose que fiche par fiche : il en faudrait 338, donc
+l'annotation disparaît quand on impose cette source.
+
 Tous les participants n'en configurent pas — la touche le dit alors clairement
 plutôt que d'afficher une barre vide.
 
@@ -81,10 +100,14 @@ avec leur cagnotte et leur statut. La liste se trie par cagnotte, nom, viewers
 ou « en direct d'abord », et la sélection courante reste toujours proposée même
 quand la recherche l'exclut.
 
+Sur l'action **Palier de dons**, ce même menu annonce le nombre de paliers de
+chaque streamer — `🟢 Mastu — 15 paliers` —, de quoi choisir sans ouvrir chaque
+fiche.
+
 ## Source des données
 
-Tout vient de l'API publique du ZEvent, `https://zevent.fr/api/` — celle
-qu'utilise le site lui-même. Elle n'émet aucun en-tête CORS : un Property
+Les cagnottes viennent de l'API publique du ZEvent, `https://zevent.fr/api/` —
+celle qu'utilise le site lui-même. Elle n'émet aucun en-tête CORS : un Property
 Inspector, qui est une page web, ne peut pas l'appeler. C'est donc le plugin
 Node qui interroge le ZEvent et pousse le catalogue vers l'interface.
 
@@ -104,9 +127,24 @@ En cas de panne, le dernier état connu reste affiché et les tentatives
 s'espacent progressivement (jusqu'à 5 minutes). Les avatars sont récupérés en
 70×70 — la variante que Twitch expose déjà — et gardés en mémoire.
 
-Les **paliers** n'y figurent pas : ils vivent sur `api.zevent.fr/streamer/<id>`,
-une fiche à la fois. Le plugin n'interroge que les streamers réellement posés
-sur une touche « palier », jamais les 338 — chaque fiche ne pèse que 2 ko.
+Les **paliers** n'y figurent pas. Deux routes les portent, selon la source
+choisie :
+
+| Route | Contenu | Poids |
+| --- | --- | --- |
+| `api.zevent.fr/streamer/<id>` | paliers d'un streamer, chez l'officiel | ~2 ko |
+| `api.evenmorestats.fr/events` | éditions, pour trouver l'année en cours par ses dates | ~3 ko |
+| `…/events/<id>/donation_goals/overview` | décompte des paliers des 338, en un appel | ~244 ko |
+| `…/participations/<pid>/donation_goals` | paliers d'un streamer, chez InGDoc | ~3 ko |
+
+Dans les deux cas, seuls les streamers réellement posés sur une touche
+« palier » sont interrogés, jamais les 338. L'édition en cours se déduit des
+dates plutôt que d'être codée en dur : le plugin suivra les prochaines sans
+modification.
+
+InGDoc est un service communautaire, sans en-tête de cache ni limite de débit
+annoncée. Il est sollicité avec la même retenue que le ZEvent, et le mode
+« auto » retombe sur l'officiel s'il ne répond pas.
 
 ## Développement
 
@@ -142,10 +180,12 @@ toute divergence (`npm run sync-version -- --check`).
 Un tag `v*` poussé sur le dépôt déclenche l'empaquetage et crée la release
 GitHub avec le `.streamDeckPlugin` en pièce jointe.
 
-> `Nodejs.Debug` reste sur `disabled` dans le dépôt : le port de débogage n'a
-> rien à faire chez les utilisateurs, et le job de publication refuse un tag
-> tant qu'il vaut `enabled`. Basculez-le localement le temps d'un débogage,
-> sans le committer.
+> `Nodejs.Debug` est **absent** du manifest, et doit le rester : le port de
+> débogage n'a rien à faire chez les utilisateurs, et le job de publication
+> refuse un tag tant que le champ figure. Ajoutez-le localement — avec la valeur
+> `enabled` — le temps d'un débogage, sans le committer. N'écrivez jamais
+> `disabled` : Stream Deck passe cette valeur à Node en argument de ligne de
+> commande et le plugin ne démarre plus.
 
 ## Contribuer
 

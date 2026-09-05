@@ -85,6 +85,18 @@ d'intervalle, bouton *Rafraîchir* compris. Cette valeur n'est pas arbitraire :
 c'est le `max-age=15` que le ZEvent déclare dans ses en-têtes. En deçà, on
 retéléchargerait mot pour mot une réponse déjà servie par le cache.
 
+**InGDoc mérite encore plus d'égards.** La seconde source des paliers
+(`api.evenmorestats.fr`) est un projet communautaire qui n'annonce **ni cache ni
+limite de débit** — aucun en-tête ne nous guide, contrairement au ZEvent. Son
+décompte groupé pèse 244 ko : il est mis en cache cinq minutes et ne doit pas
+être rechargé à chaque ouverture d'une fenêtre.
+
+**Et il doit pouvoir tomber sans conséquence.** Le mode « auto » retombe sur
+l'API officielle dès qu'InGDoc échoue ; c'est la règle à préserver dans toute
+modification de `src/goals.ts`. Un choix explicite d'InGDoc, en revanche, ne
+bascule pas en douce : la touche signale l'indisponibilité, sinon le sélecteur
+de source ne voudrait rien dire.
+
 **Le Property Inspector ne peut pas appeler l'API.** C'est une page web, et
 `zevent.fr/api/` n'émet aucun en-tête CORS. Toute donnée qu'il affiche doit
 transiter par le plugin, via `sendCatalogue()`. C'est aussi pourquoi les deux
@@ -108,10 +120,16 @@ les tracés dans `scripts/make-icons.mjs` puis relancez `npm run icons`.
 **`bin/` n'est pas versionné.** Le bundle est un artefact de build, produit par
 la CI au moment de la publication.
 
-**`Nodejs.Debug` reste sur `disabled` dans les commits.** Passez-le sur
-`enabled` pour déboguer en local, mais ne le committez pas : le job de
-publication refuse de livrer un plugin qui ouvrirait un port de débogage chez
-les utilisateurs.
+**`Nodejs.Debug` est absent du manifest, et doit le rester.** Ce champ n'est pas
+un interrupteur : Stream Deck en passe la valeur à Node **en arguments de ligne
+de commande**. Seuls `"enabled"` et `"break"` sont interprétés — écrire
+`"disabled"` fait lancer `node disabled plugin.js`, qui meurt aussitôt sans rien
+écrire dans les journaux du plugin, et Stream Deck finit par le désactiver pour
+instabilité. L'erreur a déjà été commise, `npm run check` la refuse désormais.
+
+Ajoutez le champ avec la valeur `enabled` le temps d'un débogage local, sans le
+committer : le job de publication refuse de livrer un plugin qui ouvrirait un
+port de débogage chez les utilisateurs.
 
 ## Couleurs
 
