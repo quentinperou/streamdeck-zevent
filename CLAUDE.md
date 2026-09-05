@@ -69,6 +69,27 @@ Deck repose une touche sur l'image par défaut du manifest quand elle quitte
 l'écran ; sans cet oubli, le redessin serait jugé inutile et la touche
 resterait vide.
 
+**`Nodejs.Debug` n'est pas un interrupteur.** Stream Deck passe sa valeur à Node
+en **arguments de ligne de commande**. Seuls `"enabled"` et `"break"` sont
+interprétés ; tout le reste part tel quel. Écrire `"disabled"` fait lancer
+`node disabled plugin.js`, qui meurt instantanément **sans rien écrire dans les
+journaux du plugin** — on ne voit qu'une boucle de relance, puis Stream Deck
+déclare le plugin instable et le désactive. Pour ne pas déboguer : **omettre le
+champ**. `npm run check` refuse désormais toute autre valeur.
+
+**Une promesse rejetée sans capture tue le processus.** Node sort avec le code
+1, Stream Deck relance, et après huit cycles il désactive le plugin — l'utilisateur
+n'a plus que des touches mortes. Ne jamais écrire `void promesse()` : passer par
+`safely()` de `src/safety.ts`. Un filet global attrape le reste.
+
+**Ne jamais appeler `getSettings()` dans une boucle de rendu.** C'est un
+aller-retour vers Stream Deck qui peut expirer. Les réglages sont mis en cache
+depuis `willAppear` et `didReceiveSettings`, que Stream Deck pousse déjà.
+
+**Un test qui s'arrête à l'enregistrement ne prouve rien.** Pour reproduire un
+plantage, le faux hôte doit aussi envoyer les `willAppear` : sans eux, tout le
+code de rendu reste inexploré.
+
 **Les icônes sont générées.** Modifier `scripts/make-icons.mjs`, pas les PNG.
 
 **`bin/` n'est pas versionné.** C'est un artefact de build.
@@ -79,6 +100,8 @@ resterait vide.
   messages de commit.
 - Commits au format Conventional Commits (`feat:`, `fix:`, `docs:`…), avec un
   corps qui dit *pourquoi*.
+- **Attendre la validation de Quentin avant chaque commit.** Modifier, construire
+  et recharger le plugin sans demander ; s'arrêter avant `git commit`.
 - Commentaires qui expliquent le pourquoi, jamais la paraphrase du code.
 - TypeScript strict, tabulations, pas de `any`.
 

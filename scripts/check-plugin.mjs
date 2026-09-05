@@ -64,12 +64,27 @@ for (const action of manifest.Actions ?? []) {
 }
 notes.push(`${(manifest.Actions ?? []).length} actions`);
 
+// ── Nodejs.Debug ──────────────────────────────────────────────────────────────
+// Ce champ n'est pas un interrupteur : Stream Deck en passe la valeur à Node en
+// arguments de ligne de commande. Seuls "enabled" et "break" sont interprétés ;
+// tout le reste part tel quel — `"disabled"` fait lancer `node disabled
+// plugin.js`, qui meurt aussitôt sans rien écrire dans les journaux. Pour ne pas
+// déboguer, on omet le champ.
+const debug = manifest.Nodejs?.Debug;
+if (debug !== undefined && debug !== "enabled" && debug !== "break" && !debug.startsWith("--")) {
+	errors.push(
+		`manifest.json — \`Nodejs.Debug\` vaut "${debug}", qui n'est ni "enabled", ni "break", ` +
+			"ni une option Node : Stream Deck la passera en argument et le plugin ne démarrera pas. " +
+			"Retirez le champ pour désactiver le débogage.",
+	);
+}
+
 // ── Exigences propres à une version publiée ───────────────────────────────────
 if (RELEASE) {
-	if (manifest.Nodejs?.Debug === "enabled") {
+	if (debug !== undefined) {
 		errors.push(
-			'manifest.json — `Nodejs.Debug` vaut "enabled" : à réserver au développement, ' +
-				"le port de débogage ne doit pas être ouvert chez les utilisateurs",
+			"manifest.json — `Nodejs.Debug` doit être absent d'une version publiée : " +
+				"le débogage est une commodité locale, pas quelque chose à livrer.",
 		);
 	}
 	if (!/^\d+\.\d+\.\d+\.\d+$/.test(manifest.Version ?? "")) {

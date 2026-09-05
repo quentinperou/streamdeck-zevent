@@ -5,7 +5,10 @@ import { StreamerAction } from "./actions/streamer";
 import { TotalAction } from "./actions/total";
 import { goals } from "./goals";
 import { sendCatalogue, sendGoals } from "./pi";
+import { installSafetyNet, safely } from "./safety";
 import { zevent } from "./zevent";
+
+installSafetyNet();
 
 const streamerAction = new StreamerAction();
 const totalAction = new TotalAction();
@@ -18,38 +21,40 @@ streamDeck.actions.registerAction(goalAction);
 // Un seul appel au ZEvent alimente toutes les touches : chaque réponse les
 // redessine d'un coup, et rafraîchit le Property Inspector s'il est ouvert.
 zevent.subscribe(() => {
-	void streamerAction.renderAll();
-	void totalAction.renderAll();
-	void goalAction.renderAll();
-	void sendCatalogue();
+	safely(streamerAction.renderAll(), "redessin des cagnottes streamer");
+	safely(totalAction.renderAll(), "redessin de la cagnotte globale");
+	safely(goalAction.renderAll(), "redessin des paliers");
+	safely(sendCatalogue(), "envoi du catalogue");
 });
 
 // Les paliers viennent d'un autre endpoint, à leur propre rythme : seules les
 // touches « palier » ont besoin d'être redessinées quand ils bougent.
 goals.subscribe(() => {
-	void goalAction.renderAll();
+	safely(goalAction.renderAll(), "redessin des paliers");
 });
 
 // Le Property Inspector ne peut pas appeler l'API du ZEvent lui-même : le
 // catalogue lui est poussé à l'ouverture, puis sur demande explicite.
-streamDeck.ui.onDidAppear(async () => {
-	await zevent.refresh();
-	await sendCatalogue();
+streamDeck.ui.onDidAppear(() => {
+	safely(
+		zevent.refresh().then(() => sendCatalogue()),
+		"ouverture du Property Inspector",
+	);
 });
 
-streamDeck.ui.onSendToPlugin(async (ev) => {
+streamDeck.ui.onSendToPlugin((ev) => {
 	const payload = ev.payload as { event?: string; twitchId?: string } | null;
 
 	if (payload?.event === "getGoals" && payload.twitchId) {
-		await sendGoals(payload.twitchId);
+		safely(sendGoals(payload.twitchId), "envoi des paliers");
 		return;
 	}
 
-	if (payload?.event === "refresh") {
-		await zevent.refresh();
-		await goals.refresh();
-	}
-	await sendCatalogue();
+	const work =
+		payload?.event === "refresh"
+			? Promise.all([zevent.refresh(), goals.refresh()]).then(() => sendCatalogue())
+			: sendCatalogue();
+	safely(work, "demande du Property Inspector");
 });
 
 streamDeck.connect();

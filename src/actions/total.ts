@@ -25,21 +25,26 @@ type AnyAction = KeyAction<TotalSettings> | DialAction<TotalSettings>;
 @action({ UUID: "fr.quentinperou.zevent.total" })
 export class TotalAction extends SingletonAction<TotalSettings> {
 	readonly #images = new KeyImageCache();
+	/** Derniers réglages connus de chaque touche, poussés par Stream Deck. */
+	readonly #settings = new Map<string, TotalSettings>();
 
 	override async onWillAppear(ev: WillAppearEvent<TotalSettings>): Promise<void> {
 		zevent.retain();
 		// La touche revient sur l'image par défaut du manifest : ce qu'on croyait
 		// lui avoir envoyé ne vaut plus rien.
 		this.#images.forget(ev.action.id);
+		this.#settings.set(ev.action.id, ev.payload.settings);
 		await this.#render(ev.action, ev.payload.settings);
 	}
 
 	override onWillDisappear(ev: WillDisappearEvent<TotalSettings>): void {
 		zevent.release();
 		this.#images.forget(ev.action.id);
+		this.#settings.delete(ev.action.id);
 	}
 
 	override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<TotalSettings>): Promise<void> {
+		this.#settings.set(ev.action.id, ev.payload.settings);
 		await this.#render(ev.action, ev.payload.settings);
 	}
 
@@ -49,9 +54,17 @@ export class TotalAction extends SingletonAction<TotalSettings> {
 		await streamDeck.system.openUrl(url);
 	}
 
+	/** Réglages pris dans le cache : `getSettings()` est un aller-retour, pas un accès local. */
 	async renderAll(): Promise<void> {
 		for (const target of this.actions) {
-			await this.#render(target, await target.getSettings());
+			const settings = this.#settings.get(target.id);
+			if (!settings) continue;
+
+			try {
+				await this.#render(target, settings);
+			} catch (error) {
+				streamDeck.logger.warn(`Rendu impossible pour ${target.id}`, error);
+			}
 		}
 	}
 

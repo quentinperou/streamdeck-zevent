@@ -33,10 +33,13 @@ export class GoalAction extends SingletonAction<GoalSettings> {
 	 * Property Inspector laisserait l'ancienne fiche interrogée indéfiniment.
 	 */
 	readonly #watched = new Map<string, string>();
+	/** Derniers réglages connus de chaque touche, poussés par Stream Deck. */
+	readonly #settings = new Map<string, GoalSettings>();
 
 	override async onWillAppear(ev: WillAppearEvent<GoalSettings>): Promise<void> {
 		zevent.retain();
 		this.#images.forget(ev.action.id);
+		this.#settings.set(ev.action.id, ev.payload.settings);
 		this.#watch(ev.action.id, ev.payload.settings.twitchId);
 		await this.#render(ev.action, ev.payload.settings);
 	}
@@ -44,10 +47,12 @@ export class GoalAction extends SingletonAction<GoalSettings> {
 	override onWillDisappear(ev: WillDisappearEvent<GoalSettings>): void {
 		zevent.release();
 		this.#images.forget(ev.action.id);
+		this.#settings.delete(ev.action.id);
 		this.#watch(ev.action.id, undefined);
 	}
 
 	override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<GoalSettings>): Promise<void> {
+		this.#settings.set(ev.action.id, ev.payload.settings);
 		this.#watch(ev.action.id, ev.payload.settings.twitchId);
 		await this.#render(ev.action, ev.payload.settings);
 	}
@@ -68,9 +73,17 @@ export class GoalAction extends SingletonAction<GoalSettings> {
 		await streamDeck.system.openUrl(url);
 	}
 
+	/** Réglages pris dans le cache : `getSettings()` est un aller-retour, pas un accès local. */
 	async renderAll(): Promise<void> {
 		for (const target of this.actions) {
-			await this.#render(target, await target.getSettings());
+			const settings = this.#settings.get(target.id);
+			if (!settings) continue;
+
+			try {
+				await this.#render(target, settings);
+			} catch (error) {
+				streamDeck.logger.warn(`Rendu impossible pour ${target.id}`, error);
+			}
 		}
 	}
 

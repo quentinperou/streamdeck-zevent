@@ -145,7 +145,7 @@ class ZeventStore {
 	retain(): void {
 		this.#watchers += 1;
 		if (this.#watchers === 1) {
-			void this.refresh();
+			void this.refresh().catch(() => {});
 			this.#schedule();
 		}
 	}
@@ -244,7 +244,11 @@ class ZeventStore {
 				: Math.min(MAX_BACKOFF_MS, POLL_INTERVAL_MS * 2 ** this.#failures);
 
 		this.#timer = setTimeout(() => {
-			void this.refresh().finally(() => this.#schedule());
+			void this.refresh()
+				.finally(() => this.#schedule())
+				.catch(() => {
+					/* #load absorbe déjà les échecs ; ceci couvre le reste. */
+				});
 		}, delay);
 		this.#timer.unref?.();
 	}

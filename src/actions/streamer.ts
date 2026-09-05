@@ -26,21 +26,26 @@ type AnyAction = KeyAction<StreamerSettings> | DialAction<StreamerSettings>;
 @action({ UUID: "fr.quentinperou.zevent.streamer" })
 export class StreamerAction extends SingletonAction<StreamerSettings> {
 	readonly #images = new KeyImageCache();
+	/** Derniers réglages connus de chaque touche, poussés par Stream Deck. */
+	readonly #settings = new Map<string, StreamerSettings>();
 
 	override async onWillAppear(ev: WillAppearEvent<StreamerSettings>): Promise<void> {
 		zevent.retain();
 		// La touche revient sur l'image par défaut du manifest : ce qu'on croyait
 		// lui avoir envoyé ne vaut plus rien.
 		this.#images.forget(ev.action.id);
+		this.#settings.set(ev.action.id, ev.payload.settings);
 		await this.#render(ev.action, ev.payload.settings);
 	}
 
 	override onWillDisappear(ev: WillDisappearEvent<StreamerSettings>): void {
 		zevent.release();
 		this.#images.forget(ev.action.id);
+		this.#settings.delete(ev.action.id);
 	}
 
 	override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<StreamerSettings>): Promise<void> {
+		this.#settings.set(ev.action.id, ev.payload.settings);
 		await this.#render(ev.action, ev.payload.settings);
 	}
 
@@ -60,10 +65,24 @@ export class StreamerAction extends SingletonAction<StreamerSettings> {
 		await streamDeck.system.openUrl(url);
 	}
 
-	/** Redessine toutes les touches visibles de cette action. */
+	/**
+	 * Redessine toutes les touches visibles de cette action.
+	 *
+	 * Les réglages viennent du cache et non de `getSettings()` : cet appel est
+	 * un aller-retour vers Stream Deck, et il en faudrait un par touche à chaque
+	 * cycle pour relire des valeurs que Stream Deck nous a déjà poussées.
+	 */
 	async renderAll(): Promise<void> {
 		for (const target of this.actions) {
-			await this.#render(target, await target.getSettings());
+			const settings = this.#settings.get(target.id);
+			if (!settings) continue;
+
+			try {
+				await this.#render(target, settings);
+			} catch (error) {
+				// Une touche en échec ne doit pas priver les autres de leur mise à jour.
+				streamDeck.logger.warn(`Rendu impossible pour ${target.id}`, error);
+			}
 		}
 	}
 

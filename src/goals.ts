@@ -86,7 +86,7 @@ class GoalStore {
 		entry.watchers += 1;
 		this.#entries.set(twitchId, entry);
 
-		void this.#load(twitchId);
+		void this.#load(twitchId).catch(() => {});
 		this.#schedule();
 	}
 
@@ -184,7 +184,7 @@ class GoalStore {
 
 	#schedule(): void {
 		if (this.#timer) return;
-		this.#timer = setInterval(() => void this.refresh(), POLL_INTERVAL_MS);
+		this.#timer = setInterval(() => void this.refresh().catch(() => {}), POLL_INTERVAL_MS);
 		this.#timer.unref?.();
 	}
 
