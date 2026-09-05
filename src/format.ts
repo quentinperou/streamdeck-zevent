@@ -66,6 +66,14 @@ export function formatAmount(value: number, official: string, format: NumberForm
 	return format === "short" ? `${abbreviate(value)} €` : official;
 }
 
-export function formatViewers(value: number, format: NumberFormat): string {
+/**
+ * Nombre nu, sans unité. Les classements portent l'unité dans leur titre : sur
+ * une ligne partagée avec un pseudo, un « € » coûte une lettre et demie.
+ */
+export function formatNumber(value: number, format: NumberFormat): string {
 	return format === "short" ? abbreviate(value) : groupDigits(value);
+}
+
+export function formatViewers(value: number, format: NumberFormat): string {
+	return formatNumber(value, format);
 }

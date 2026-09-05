@@ -23,6 +23,9 @@ const Z_PATH = "M18 20 H82 V34 L44 66 H82 V80 H18 V66 L56 34 H18 Z";
 const FLAG_PATH = "M24 12 h8 v78 h-8 z M32 16 h48 l-12 15 l12 15 h-48 z";
 /** Un cœur : la cagnotte, pas la marque. */
 const HEART_PATH = "M50 84 C18 61 10 44 21 31 C31 20 46 23 50 35 C54 23 69 20 79 31 C90 44 82 61 50 84 Z";
+/** Un podium : le classement, trois marches décroissantes. */
+const PODIUM_PATH =
+	"M12 54 h24 v34 h-24 z M40 26 h24 v62 h-24 z M68 66 h24 v22 h-24 z";
 
 function svg(body) {
 	return Buffer.from(
@@ -52,6 +55,8 @@ const TARGETS = [
 	{ file: "actions/goal/action-icon", size: 20, source: glyph(FLAG_PATH) },
 	{ file: "actions/goal/key", size: 72, source: tile(FLAG_PATH) },
 	{ file: "actions/total/key", size: 72, source: tile(HEART_PATH) },
+	{ file: "actions/ranking/action-icon", size: 20, source: glyph(PODIUM_PATH) },
+	{ file: "actions/ranking/key", size: 72, source: tile(PODIUM_PATH) },
 ];
 
 for (const { file, size, source } of TARGETS) {

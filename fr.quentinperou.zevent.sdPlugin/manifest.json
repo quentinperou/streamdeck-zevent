@@ -1,6 +1,6 @@
 {
 	"Name": "ZEvent",
-	"Version": "1.5.0.0",
+	"Version": "1.6.0.0",
 	"Author": "QuentinPerou",
 	"Description": "Suivez le ZEvent sur vos touches Stream Deck : la cagnotte de chaque streamer, le total de l'événement et la progression vers les paliers de dons, actualisés en continu. Un appui ouvre la chaîne Twitch du streamer.",
 	"Category": "ZEvent",
@@ -67,6 +67,25 @@
 				}
 			],
 			"PropertyInspectorPath": "ui/goal.html"
+		},
+		{
+			"Icon": "imgs/actions/ranking/action-icon",
+			"Name": "Classement",
+			"UUID": "fr.quentinperou.zevent.ranking",
+			"Tooltip": "Les quatre premiers du ZEvent, par cagnotte ou par viewers.",
+			"SupportedInMultiActions": false,
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/actions/ranking/key",
+					"Name": "Default",
+					"Title": "",
+					"TitleAlignment": "middle"
+				}
+			],
+			"PropertyInspectorPath": "ui/ranking.html"
 		}
 	],
 	"SDKVersion": 3,

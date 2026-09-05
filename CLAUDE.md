@@ -35,7 +35,7 @@ Avant de proposer quoi que ce soit : `sync-version -- --check`, `typecheck`,
 | `src/goals.ts` | Paliers de dons : choix de la source, repli, cache par couple streamer/source |
 | `src/ingdoc.ts` | Source alternative InGDoc : résolution de l'édition, décompte groupé, historiques |
 | `src/render.ts` | Visuels de touche en SVG |
-| `src/spike.ts` | Temps forts : rythme propre à chaque streamer, sans requête supplémentaire |
+| `src/spike.ts` | Temps forts : part du flux global, rafale soutenue |
 | `src/format.ts` | Nombres complets ou abrégés |
 | `src/key-image.ts` | Évite de réenvoyer une image identique |
 | `src/press.ts` | Distingue appui court et appui long, absents du SDK |
@@ -97,13 +97,36 @@ depuis `willAppear` et `didReceiveSettings`, que Stream Deck pousse déjà.
 plantage, le faux hôte doit aussi envoyer les `willAppear` : sans eux, tout le
 code de rendu reste inexploré.
 
-**Le rythme de référence des temps forts est un débit, pas une hausse.** Le
-plugin ne sonde que si une touche est visible : au réveil, l'écart entre deux
-relevés couvre parfois des heures, et la hausse accumulée n'a plus rien d'un pic.
-`spike.ts` travaille donc en euros par minute, ignore les intervalles hors de
-[30 s, 5 min] et repart de zéro au-delà. Le cadre s'éteint au premier redessin
-qui suit son échéance, donc jusqu'à une minute plus tard : c'est volontaire, un
-minuteur par touche coûterait plus que ce qu'il apporte.
+**Un temps fort se mesure en part du flux, jamais en débit brut.** Une première
+version comparait chaque streamer à son propre débit passé : elle encadrait
+14,5 touches sur 340 en permanence. La raison tient en une phrase — quand le
+ZEvent entier s'emballe, tout le monde monte ensemble, et *tout le monde*
+s'allume. Ramener le débit à la part du flux global annule la vague. Ne pas
+revenir en arrière là-dessus.
+
+**Et il faut une rafale soutenue.** Deux relevés consécutifs, c'est le facteur le
+plus lourd : sur les mêmes relevés, 101 déclenchements sans, 11 avec. Attention,
+la référence doit être **figée au début de la rafale** : sinon son premier relevé
+entre dans la moyenne, relève le seuil, et le deuxième échoue toujours — aucune
+rafale ne tient alors deux relevés. Le piège est invisible sur des séries
+régulières et n'apparaît qu'au test.
+
+**Le rythme de référence est un débit, pas une hausse.** Le plugin ne sonde que
+si une touche est visible : au réveil, l'écart entre deux relevés couvre parfois
+des heures, et la hausse accumulée n'a plus rien d'un pic. `spike.ts` travaille
+donc en euros par minute, ignore les intervalles hors de [30 s, 5 min] et repart
+de zéro au-delà. Il ignore aussi les relevés où le total global n'a pas bougé :
+le ZEvent ne rafraîchit ses montants qu'environ toutes les minutes, et ces
+zéros-là tireraient toutes les références vers le bas. Le cadre s'éteint au
+premier redessin qui suit son échéance, donc jusqu'à une minute plus tard :
+c'est volontaire, un minuteur par touche coûterait plus que ce qu'il apporte.
+
+**Calibrer sur la granularité de production, pas sur celle qui est commode.** La
+première version tirait ses seuils de l'historique InGDoc, en pas de 10 minutes,
+où les pics sortent « 19 à 239 fois au-dessus ». Le détecteur, lui, tourne à la
+minute : le lissage disparaît, la variation naturelle mange toute la marge, et
+des tests synthétiques à séries régulières ne le montrent pas. Rejouer de vrais
+relevés à la cadence réelle avant de croire un seuil.
 
 **Les icônes sont générées.** Modifier `scripts/make-icons.mjs`, pas les PNG.
 

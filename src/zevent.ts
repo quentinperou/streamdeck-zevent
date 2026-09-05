@@ -234,7 +234,7 @@ class ZeventStore {
 
 		// Les variations se lisent ici, au moment où le relevé arrive : c'est le
 		// seul endroit qui voit l'état précédent et le suivant.
-		spikes.observe(this.streamers);
+		spikes.observe(this.streamers, this.#totals.donation);
 	}
 
 	#schedule(): void {

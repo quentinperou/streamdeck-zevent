@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8" />
+		<title>Classement</title>
+		<link rel="stylesheet" href="css/pi.css" />
+	</head>
+	<body>
+		<div id="preview" class="preview empty">Chargement…</div>
+
+		<div class="row">
+			<label for="sort">Classer par</label>
+			<div class="field">
+				<select id="sort">
+					<option value="donation">Cagnotte</option>
+					<option value="viewers">Viewers</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="row">
+			<label for="format">Chiffres</label>
+			<div class="field">
+				<select id="format">
+					<option value="short">Abrégés — 1.25M €</option>
+					<option value="full">Complets — 1 250 000 €</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="row">
+			<label for="click">Appui court</label>
+			<div class="field">
+				<select id="click">
+					<option value="toggle">Basculer cagnotte / viewers</option>
+					<option value="site">Ouvrir zevent.fr</option>
+					<option value="donation">Ouvrir la page de don</option>
+					<option value="none">Ne rien faire</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="row">
+			<label for="long">Appui long</label>
+			<div class="field">
+				<select id="long">
+					<option value="toggle">Basculer cagnotte / viewers</option>
+					<option value="site">Ouvrir zevent.fr</option>
+					<option value="donation">Ouvrir la page de don</option>
+					<option value="none">Ne rien faire</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="footer">
+			<button id="refresh" type="button">↺ Rafraîchir</button>
+			<div id="status" class="status"></div>
+		</div>
+
+		<script src="js/sd-pi.js"></script>
+		<script>
+			(function () {
+				"use strict";
+
+				var $ = function (id) {
+					return document.getElementById(id);
+				};
+
+				var settings = {};
+				var lastPayload = null;
+
+				/** Les nombres complets ne laissent pas de place au pseudo : abrégé par défaut. */
+				function short() {
+					return settings.numberFormat !== "full";
+				}
+
+				function save() {
+					window.PI.setSettings(settings);
+				}
+
+				function sortBy() {
+					return settings.sortBy === "viewers" ? "viewers" : "donation";
+				}
+
+				/** Redessine l'aperçu depuis le dernier catalogue reçu et les réglages courants. */
+				function fillPreview() {
+					var preview = $("preview");
+					var streamers = (lastPayload && lastPayload.streamers) || [];
+
+					if (streamers.length === 0) {
+						preview.className = "preview empty";
+						preview.textContent =
+							lastPayload && lastPayload.error ? "ZEvent injoignable" : "Chargement…";
+						return;
+					}
+
+					var viewers = sortBy() === "viewers";
+					var ranked = streamers.slice().sort(function (a, b) {
+						return viewers ? b.viewers - a.viewers : b.donationValue - a.donationValue;
+					});
+
+					preview.className = "preview ranking";
+					preview.innerHTML = "";
+
+					ranked.slice(0, 4).forEach(function (streamer) {
+						var line = document.createElement("div");
+						line.className = "rank";
+
+						var name = document.createElement("span");
+						name.textContent = streamer.display;
+
+						var value = document.createElement("span");
+						value.textContent = viewers
+							? short()
+								? streamer.viewersShort
+								: streamer.viewersFull
+							: short()
+								? streamer.donationShort
+								: streamer.donation;
+
+						line.appendChild(name);
+						line.appendChild(value);
+						preview.appendChild(line);
+					});
+				}
+
+				$("sort").addEventListener("change", function () {
+					settings.sortBy = $("sort").value;
+					save();
+					fillPreview();
+				});
+
+				$("format").addEventListener("change", function () {
+					settings.numberFormat = $("format").value;
+					save();
+					fillPreview();
+				});
+
+				$("click").addEventListener("change", function () {
+					settings.clickAction = $("click").value;
+					save();
+				});
+
+				$("long").addEventListener("change", function () {
+					settings.longPressAction = $("long").value;
+					save();
+				});
+
+				$("refresh").addEventListener("click", function () {
+					$("refresh").disabled = true;
+					window.PI.sendToPlugin({ event: "refresh" });
+					setTimeout(function () {
+						$("refresh").disabled = false;
+					}, 3000);
+				});
+
+				window.PI.onSettings = function (next) {
+					settings = next || {};
+					$("sort").value = sortBy();
+					$("format").value = settings.numberFormat === "full" ? "full" : "short";
+					$("click").value = settings.clickAction || "toggle";
+					$("long").value = settings.longPressAction || "site";
+					fillPreview();
+					window.PI.sendToPlugin({ event: "getCatalogue" });
+				};
+
+				window.PI.on("catalogue", function (payload) {
+					lastPayload = payload;
+					$("refresh").disabled = false;
+					fillPreview();
+
+					var status = $("status");
+					var live = (payload.streamers || []).filter(function (streamer) {
+						return streamer.online;
+					}).length;
+					status.className = payload.stale ? "status error" : "status";
+					status.textContent = live + " streamers en direct";
+				});
+			})();
+		</script>
+	</body>
+</html>

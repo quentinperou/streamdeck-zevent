@@ -1,7 +1,7 @@
 # ZEvent pour Stream Deck
 
 [![Build](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml/badge.svg)](https://github.com/quentinperou/streamdeck-zevent/actions/workflows/build.yml)
-[![Version](https://img.shields.io/badge/version-1.5.0-00BD00)](https://github.com/quentinperou/streamdeck-zevent/releases)
+[![Version](https://img.shields.io/badge/version-1.6.0-00BD00)](https://github.com/quentinperou/streamdeck-zevent/releases)
 [![Licence](https://img.shields.io/badge/licence-MIT-00BD00)](LICENSE)
 
 Affiche les cagnottes du [ZEvent](https://zevent.fr/) sur les touches d'un Stream Deck, et ouvre la
@@ -25,6 +25,7 @@ apparaissent ensuite dans la catégorie **ZEvent**.
 | **Cagnotte streamer** | Pseudo, cagnotte, viewers, avatar en fond |
 | **Cagnotte globale** | Total du ZEvent et viewers cumulés |
 | **Palier de dons** | Avancement vers un palier, en barre de progression |
+| **Classement** | Les quatre premiers, par cagnotte ou par viewers |
 
 Le bandeau vert en bas de touche signale un stream en direct ; il s'éteint
 lorsque le streamer est hors ligne. Une pastille ambre apparaît si la donnée
@@ -35,19 +36,21 @@ affichée a plus de trois minutes.
 Chaque touche déclenche une action au clic et une autre à l'appui maintenu
 (500 ms). Les deux se règlent séparément, dans la même liste :
 
-| | Cagnotte streamer | Cagnotte globale | Palier de dons |
-| --- | --- | --- | --- |
-| Ouvrir la chaîne Twitch | ✓ | | ✓ |
-| Ouvrir la page de don | ✓ | ✓ | ✓ |
-| Ouvrir zevent.fr | | ✓ | |
-| Afficher / masquer le graphique | ✓ | ✓ | |
-| Afficher le nom du palier | | | ✓ |
-| Ne rien faire | ✓ | ✓ | ✓ |
+| | Cagnotte streamer | Cagnotte globale | Palier de dons | Classement |
+| --- | --- | --- | --- | --- |
+| Ouvrir la chaîne Twitch | ✓ | | ✓ | |
+| Ouvrir la page de don | ✓ | ✓ | ✓ | ✓ |
+| Ouvrir zevent.fr | | ✓ | | ✓ |
+| Afficher / masquer le graphique | ✓ | ✓ | | |
+| Afficher le nom du palier | | | ✓ | |
+| Basculer cagnotte / viewers | | | | ✓ |
+| Ne rien faire | ✓ | ✓ | ✓ | ✓ |
 
 Par défaut, l'appui court montre quelque chose et l'appui long emmène ailleurs :
 le graphique puis la chaîne Twitch sur une cagnotte de streamer, le graphique
 puis la page de don sur la cagnotte globale, le nom du palier puis la page de
-don sur un palier.
+don sur un palier, la bascule cagnotte/viewers puis zevent.fr sur un
+classement.
 
 L'action longue se déclenche **au seuil**, pas au relâchement : sans cela rien
 n'indiquerait qu'on a assez appuyé, et relâcher plus tôt ne permettrait pas
@@ -77,28 +80,43 @@ total affiché par le ZEvent. Elle n'a en revanche besoin d'aucun autre appel �
 une touche **Cagnotte globale** posée seule ne télécharge jamais les 244 ko du
 décompte des paliers.
 
+### Classement
+
+L'action **Classement** montre les **quatre premiers** du ZEvent, au choix par
+cagnotte ou par nombre de viewers. Un appui bascule d'un critère à l'autre — et
+comme la bascule écrit le réglage, la touche garde son critère au redémarrage et
+le Property Inspector suit le changement au lieu d'annoncer autre chose que ce
+qui s'affiche.
+
+Deux partis pris imposés par les 72 pixels : les chiffres sont **abrégés par
+défaut**, à rebours des autres actions, et les lignes **ne portent pas le « € »**
+— le titre de la touche dit déjà ce qu'on compte, et le symbole coûtait une
+lettre et demie par ligne : avec lui, `mistermv` et `Anyme023` se tronquaient.
+
 ### Temps forts
 
-Quand la cagnotte d'un streamer s'emballe, sa touche s'entoure d'un **cadre
-blanc** et annonce la hausse à la place du nombre de viewers. Le cadre s'efface
-de lui-même trois minutes après le dernier pic.
+Quand un streamer prend nettement plus que sa part habituelle des dons, sa
+touche s'entoure d'un **cadre blanc** et annonce la hausse cumulée du moment. Le
+cadre s'efface de lui-même trois minutes après le dernier relevé qualifiant.
 
-Le seuil ne peut pas être un montant : sur l'édition 2026, le plus gros pic d'un
-petit streamer (212 € en dix minutes) passe sous le rythme *ordinaire* d'un gros
-(704 €). Un seuil en euros décorerait toujours les mêmes chaînes. Chaque
-streamer est donc comparé à **son propre rythme des vingt dernières minutes**,
-et une hausse le dépassant six fois déclenche le cadre. Les pics réels sortent
-entre 19 et 239 fois au-dessus : la marge est large. Un plancher de 20 € par
-minute évite qu'une chaîne au repos s'allume au premier don de deux euros.
+Deux conditions, et il a fallu les relevés d'une vraie soirée pour les trouver :
 
-Rejoué sur les relevés de l'édition, cela donne une dizaine d'allumages par gros
-streamer sur les trois jours, et un seul pour une petite chaîne — assez rare
-pour vouloir dire quelque chose.
+- **La part du flux, pas le débit.** Quand le ZEvent entier s'emballe, tout le
+  monde monte ensemble : à débit brut, toutes les touches s'allument à la fois.
+  Ramené à la part que capte le streamer, celui qui suit la vague ne bouge pas.
+- **Deux relevés consécutifs.** C'est ce qui pèse le plus : sur les mêmes
+  relevés, la part du flux seule déclenchait 101 fois, la durée ramène à 11.
+  Une minute isolée au-dessus, c'est une grosse donation ; un temps fort, ça
+  dure.
+
+Mesuré sur des relevés réels, 340 participants : **1,5 touche encadrée en
+moyenne**, et jamais plus de deux parmi les vingt plus grosses cagnottes. Une
+première version, qui comparait chaque streamer à son seul débit passé, en
+encadrait 14,5 — dont près de deux du top 20 en permanence.
 
 Rien de tout cela ne coûte une requête : la réponse du ZEvent porte déjà les 338
-cagnottes à chaque sondage, et la variation se lit à la minute plutôt qu'aux dix
-minutes de l'historique. En contrepartie il faut **une dizaine de minutes de
-sondages** avant le premier verdict : au démarrage, aucun rythme de référence
+cagnottes à chaque sondage. En contrepartie il faut **une dizaine de minutes de
+sondages** avant le premier verdict : au démarrage, aucune part de référence
 n'existe encore, et le plugin préfère ne rien signaler qu'inventer. La case
 *Temps forts* désactive l'ensemble.
 

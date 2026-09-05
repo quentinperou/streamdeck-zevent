@@ -252,3 +252,31 @@ button:disabled {
 	font-size: 10.5px;
 	margin: -3px 0 10px 94px;
 }
+
+/* Aperçu d'un classement : quatre lignes, pseudo à gauche et nombre à droite. */
+.preview.ranking {
+	display: block;
+	padding: 8px 10px;
+}
+
+.preview .rank {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 10px;
+	font-size: 12px;
+	line-height: 1.5;
+}
+
+.preview .rank span:first-child {
+	min-width: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.preview .rank span:last-child {
+	color: var(--green);
+	font-weight: 700;
+	flex: 0 0 auto;
+}

@@ -2,12 +2,13 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { formatAmount, formatViewers, type NumberFormat } from "../src/format";
+import { formatAmount, formatNumber, formatViewers, type NumberFormat } from "../src/format";
 import { goals, pickGoal, progressToward } from "../src/goals";
 import { ingdoc } from "../src/ingdoc";
 import {
 	renderGoalKey,
 	renderMessageKey,
+	renderRankingKey,
 	renderStreamerKey,
 	renderTotalGraphKey,
 	renderTotalKey,
@@ -107,6 +108,26 @@ async function main(): Promise<void> {
 			alert: "+11 400 €",
 		}),
 	);
+
+	for (const [critere, titre] of [["donation", "CAGNOTTES"], ["viewers", "VIEWERS"]] as const) {
+		const classes =
+			critere === "donation"
+				? zevent.streamers
+				: [...zevent.streamers].sort((a, b) => b.viewers - a.viewers);
+		for (const format of FORMATS) {
+			write(
+				`key-classement-${critere}-${format}`,
+				renderRankingKey({
+					title: titre,
+					entries: classes.slice(0, 4).map((s) => ({
+						name: s.display,
+						value: formatNumber(critere === "donation" ? s.donation : s.viewers, format),
+					})),
+					stale: false,
+				}),
+			);
+		}
+	}
 
 	write("key-empty", renderMessageKey("Choisir un streamer"));
 	write("key-error", renderMessageKey("ZEvent injoignable", "warning"));

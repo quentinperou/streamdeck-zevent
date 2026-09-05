@@ -1,6 +1,7 @@
 import streamDeck from "@elgato/streamdeck";
 
 import { GoalAction } from "./actions/goal";
+import { RankingAction } from "./actions/ranking";
 import { StreamerAction } from "./actions/streamer";
 import { TotalAction } from "./actions/total";
 import { goals, type GoalSource } from "./goals";
@@ -13,10 +14,12 @@ installSafetyNet();
 const streamerAction = new StreamerAction();
 const totalAction = new TotalAction();
 const goalAction = new GoalAction();
+const rankingAction = new RankingAction();
 
 streamDeck.actions.registerAction(streamerAction);
 streamDeck.actions.registerAction(totalAction);
 streamDeck.actions.registerAction(goalAction);
+streamDeck.actions.registerAction(rankingAction);
 
 // Un seul appel au ZEvent alimente toutes les touches : chaque réponse les
 // redessine d'un coup, et rafraîchit le Property Inspector s'il est ouvert.
@@ -24,6 +27,7 @@ zevent.subscribe(() => {
 	safely(streamerAction.renderAll(), "redessin des cagnottes streamer");
 	safely(totalAction.renderAll(), "redessin de la cagnotte globale");
 	safely(goalAction.renderAll(), "redessin des paliers");
+	safely(rankingAction.renderAll(), "redessin des classements");
 	safely(sendCatalogue(), "envoi du catalogue");
 });
 

@@ -155,14 +155,25 @@ type TextOptions = {
 	fill: string;
 	weight?: "bold" | "normal";
 	opacity?: number;
+	/** Par défaut centré : la quasi-totalité des touches n'a qu'une colonne. */
+	anchor?: "start" | "middle" | "end";
+	x?: number;
 };
 
-function text(content: string, { y, size, fill, weight = "bold", opacity }: TextOptions): string {
+function text(
+	content: string,
+	{ y, size, fill, weight = "bold", opacity, anchor = "middle", x = SIZE / 2 }: TextOptions,
+): string {
 	const alpha = opacity === undefined ? "" : ` opacity="${opacity}"`;
 	return (
-		`<text x="${SIZE / 2}" y="${y}" font-family="${FONT}" font-size="${size}" ` +
-		`font-weight="${weight}" fill="${fill}" text-anchor="middle"${alpha}>${escapeXml(content)}</text>`
+		`<text x="${x}" y="${y}" font-family="${FONT}" font-size="${size}" ` +
+		`font-weight="${weight}" fill="${fill}" text-anchor="${anchor}"${alpha}>${escapeXml(content)}</text>`
 	);
+}
+
+/** Largeur d'un texte rendu, en unités SVG. */
+function textWidth(content: string, size: number): number {
+	return (glyphUnits(content) * size) / 1000;
 }
 
 function toDataUri(body: string): string {
@@ -179,14 +190,28 @@ function toDataUri(body: string): string {
  * n'importe quel avatar, y compris les portraits clairs ou très saturés. Un
  * texte dense en demande davantage.
  */
-function background(avatar: string | null, overlay = 0.78): string {
-	let body = `<rect width="${SIZE}" height="${SIZE}" fill="${COLORS.background}"/>`;
+function background(avatar: string | null, overlay = 0.78, inset = 0): string {
+	const side = SIZE - inset * 2;
+	const radius = inset > 0 ? ALERT_RADIUS - inset : 0;
+	const rounded = radius > 0 ? ` rx="${radius}"` : "";
+
+	let body =
+		`<rect x="${inset}" y="${inset}" width="${side}" height="${side}"${rounded} ` +
+		`fill="${COLORS.background}"/>`;
+
 	if (avatar) {
+		// L'image ne se découpe pas : le moteur de Stream Deck n'a ni `clipPath` ni
+		// masque. On la rentre de quelques unités de plus que le fond pour que ses
+		// angles droits restent à l'intérieur de l'arrondi.
+		const tucked = inset > 0 ? inset + IMAGE_TUCK : 0;
+		const box = SIZE - tucked * 2;
+
 		// `xlink:href` plutôt que `href` : l'image pèse à elle seule l'essentiel du
 		// message envoyé à Stream Deck, on ne la duplique pas pour deux syntaxes.
 		body +=
-			`<image x="0" y="0" width="${SIZE}" height="${SIZE}" xlink:href="${avatar}"/>` +
-			`<rect width="${SIZE}" height="${SIZE}" fill="#000000" opacity="${overlay}"/>`;
+			`<image x="${tucked}" y="${tucked}" width="${box}" height="${box}" xlink:href="${avatar}"/>` +
+			`<rect x="${tucked}" y="${tucked}" width="${box}" height="${box}" ` +
+			`fill="#000000" opacity="${overlay}"/>`;
 	}
 	return body;
 }
@@ -280,22 +305,24 @@ function staleDot(): string {
 
 /** Épaisseur du cadre de temps fort, en unités SVG — soit 3 pixels réels. */
 const ALERT_FRAME = 6;
+/** Arrondi des angles, pour épouser la forme des touches. */
+const ALERT_RADIUS = 16;
+/** De combien l'avatar rentre en plus du fond, pour ne pas déborder l'arrondi. */
+const IMAGE_TUCK = 3;
 
 /**
- * Cadre de temps fort : quatre `rect`, jamais un `stroke`. Le moteur de Stream
- * Deck n'en dessine pas, et un contour absent ne se verrait qu'une fois le
- * plugin installé.
+ * Cadre de temps fort : un `rect` arrondi posé **sous** le contenu, que le fond
+ * recouvre en laissant dépasser ses bords. Jamais un `stroke` — le moteur de
+ * Stream Deck n'en dessine pas, et un contour absent ne se verrait qu'une fois
+ * le plugin installé chez l'utilisateur.
  *
  * Il remplace le bandeau « en direct » plutôt que de s'y superposer : pendant
  * un pic de dons, la chaîne est évidemment en direct.
  */
 function alertFrame(): string {
-	const edge = ALERT_FRAME;
 	return (
-		`<rect x="0" y="0" width="${SIZE}" height="${edge}" fill="${COLORS.alert}"/>` +
-		`<rect x="0" y="${SIZE - edge}" width="${SIZE}" height="${edge}" fill="${COLORS.alert}"/>` +
-		`<rect x="0" y="${edge}" width="${edge}" height="${SIZE - edge * 2}" fill="${COLORS.alert}"/>` +
-		`<rect x="${SIZE - edge}" y="${edge}" width="${edge}" height="${SIZE - edge * 2}" fill="${COLORS.alert}"/>`
+		`<rect x="0" y="0" width="${SIZE}" height="${SIZE}" ` +
+		`rx="${ALERT_RADIUS}" fill="${COLORS.alert}"/>`
 	);
 }
 
@@ -319,7 +346,8 @@ export function renderStreamerKey(options: StreamerKeyOptions): string {
 	const nameSize = fitFontSize(name, CONTENT_WIDTH, 17, 11);
 	const amountSize = fitFontSize(amount, CONTENT_WIDTH, 36, 14);
 
-	let body = background(avatar);
+	let body = alert ? alertFrame() : "";
+	body += background(avatar, 0.78, alert ? ALERT_FRAME : 0);
 	body += text(truncate(name, CONTENT_WIDTH, nameSize), {
 		y: viewers ? 27 : 33,
 		size: nameSize,
@@ -331,14 +359,16 @@ export function renderStreamerKey(options: StreamerKeyOptions): string {
 		fill: COLORS.amount,
 	});
 	if (viewers) {
-		const size = fitFontSize(viewers, CONTENT_WIDTH, 15, 10);
+		// La hausse est l'information du moment : elle mérite plus que le corps
+		// discret réservé au nombre de viewers.
+		const size = fitFontSize(viewers, CONTENT_WIDTH, alert ? 21 : 15, 10);
 		body += text(truncate(viewers, CONTENT_WIDTH, size), {
 			y: 121,
 			size,
 			fill: alert ? COLORS.alert : COLORS.muted,
 		});
 	}
-	body += alert ? alertFrame() : statusBar(online ? COLORS.live : COLORS.offline);
+	if (!alert) body += statusBar(online ? COLORS.live : COLORS.offline);
 	if (stale) body += staleDot();
 
 	return toDataUri(body);
@@ -395,7 +425,8 @@ export function renderStreamerGraphKey(options: StreamerGraphKeyOptions): string
 	const nameSize = fitFontSize(name, CONTENT_WIDTH, 15, 10);
 	const amountSize = fitFontSize(amount, CONTENT_WIDTH, 26, 12);
 
-	let body = background(avatar, 0.84);
+	let body = alert ? alertFrame() : "";
+	body += background(avatar, 0.84, alert ? ALERT_FRAME : 0);
 	body += text(truncate(name, CONTENT_WIDTH, nameSize), {
 		y: 24,
 		size: nameSize,
@@ -409,15 +440,15 @@ export function renderStreamerGraphKey(options: StreamerGraphKeyOptions): string
 	body += sparkline(points);
 
 	if (caption) {
-		const size = fitFontSize(caption, CONTENT_WIDTH, 12, 9);
+		const size = fitFontSize(caption, CONTENT_WIDTH, alert ? 16 : 12, 9);
 		body += text(truncate(caption, CONTENT_WIDTH, size), {
-			y: 133,
+			y: alert ? 131 : 133,
 			size,
 			fill: alert ? COLORS.alert : COLORS.muted,
 		});
 	}
 
-	body += alert ? alertFrame() : statusBar(online ? COLORS.live : COLORS.offline);
+	if (!alert) body += statusBar(online ? COLORS.live : COLORS.offline);
 	if (stale) body += staleDot();
 
 	return toDataUri(body);
@@ -498,6 +529,75 @@ export function renderTotalGraphKey(options: TotalGraphKeyOptions): string {
 		const size = fitFontSize(viewers, CONTENT_WIDTH, 12, 9);
 		body += text(truncate(viewers, CONTENT_WIDTH, size), { y: 133, size, fill: COLORS.muted });
 	}
+
+	body += statusBar(COLORS.live);
+	if (stale) body += staleDot();
+
+	return toDataUri(body);
+}
+
+/**
+ * Classement : quatre lignes, un nom à gauche et un nombre à droite.
+ *
+ * La marge est celle des paragraphes et non celle des montants : ici chaque
+ * unité reprise sur les côtés est un caractère de pseudo en moins, et les
+ * pseudos sont déjà à l'étroit à côté d'un nombre.
+ */
+const RANKING = {
+	padding: PARAGRAPH_PADDING,
+	title: 18,
+	first: 46,
+	spacing: 25,
+	size: 14,
+	/** Le nombre s'écrit plus petit que le pseudo : il est court, et la place
+	 * qu'il rend est celle d'un pseudo qui, sinon, se tronque. */
+	valueSize: 13,
+	/** Blanc entre le pseudo tronqué et le nombre, pour qu'ils ne se touchent pas. */
+	gap: 6,
+};
+
+export type RankingEntry = {
+	name: string;
+	value: string;
+};
+
+export type RankingKeyOptions = {
+	title: string;
+	entries: RankingEntry[];
+	stale: boolean;
+};
+
+export function renderRankingKey(options: RankingKeyOptions): string {
+	const { title, entries, stale } = options;
+	const width = SIZE - RANKING.padding * 2;
+
+	let body = background(null);
+	body += text(truncate(title, width, 13), { y: RANKING.title, size: 13, fill: COLORS.amount });
+
+	entries.slice(0, 4).forEach((entry, index) => {
+		const y = RANKING.first + index * RANKING.spacing;
+
+		// Le nombre passe en premier : c'est lui qui fixe la place qu'il reste au
+		// pseudo, et non l'inverse — un pseudo tronqué reste lisible, un montant
+		// tronqué ne veut plus rien dire.
+		const valueSize = fitFontSize(entry.value, width * 0.55, RANKING.valueSize, 10);
+		const nameWidth = width - textWidth(entry.value, valueSize) - RANKING.gap;
+
+		body += text(truncate(entry.name, nameWidth, RANKING.size), {
+			x: RANKING.padding,
+			y,
+			size: RANKING.size,
+			fill: COLORS.name,
+			anchor: "start",
+		});
+		body += text(entry.value, {
+			x: SIZE - RANKING.padding,
+			y,
+			size: valueSize,
+			fill: COLORS.amount,
+			anchor: "end",
+		});
+	});
 
 	body += statusBar(COLORS.live);
 	if (stale) body += staleDot();
