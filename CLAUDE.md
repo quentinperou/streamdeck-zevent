@@ -4,6 +4,19 @@ Repères pour travailler sur ce dépôt. Les règles destinées aux contributeur
 humains sont dans [CONTRIBUTING.md](CONTRIBUTING.md) ; ce fichier ne répète que
 ce qui se perd facilement.
 
+## Mémoire
+
+**Lire [`.local/MEMORY.md`](.local/MEMORY.md) au début de chaque session**, et
+y écrire toute nouvelle mémoire — jamais dans `~/.claude/projects/`.
+
+Cet emplacement par défaut est indexé par le **chemin absolu** du projet : il
+est perdu au premier déplacement ou renommage du dossier. `.local/` vit dans le
+projet, donc il le suit. Le dossier est dans `.gitignore` : le dépôt est
+public, et rien de ce qu'il contient n'a à y être publié.
+
+On y trouve aussi les maquettes de touche et les bancs de mesure de la
+détection des temps forts, chacun avec son propre README.
+
 ## Le projet
 
 Plugin Stream Deck qui affiche les cagnottes du ZEvent sur les touches et ouvre

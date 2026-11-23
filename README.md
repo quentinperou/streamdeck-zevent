@@ -15,8 +15,8 @@ BOURREZ LES DONS !!
 
 Récupérez le fichier `.streamDeckPlugin` de la
 [dernière release](https://github.com/quentinperou/streamdeck-zevent/releases)
-et double-cliquez dessus : Stream Deck se charge du reste. Les actions
-apparaissent ensuite dans la catégorie **ZEvent**.
+et double-cliquez dessus. Les actions apparaissent ensuite dans la catégorie
+**ZEvent**.
 
 ## Actions
 
@@ -27,7 +27,7 @@ apparaissent ensuite dans la catégorie **ZEvent**.
 | **Palier de dons** | Avancement vers un palier, en barre de progression |
 | **Classement** | Les quatre premiers, par cagnotte ou par viewers |
 
-Le bandeau vert en bas de touche signale un stream en direct ; il s'éteint
+Le bandeau vert en bas de touche signale un stream en direct, et s'éteint
 lorsque le streamer est hors ligne. Une pastille ambre apparaît si la donnée
 affichée a plus de trois minutes.
 
@@ -46,82 +46,51 @@ Chaque touche déclenche une action au clic et une autre à l'appui maintenu
 | Basculer cagnotte / viewers | | | | ✓ |
 | Ne rien faire | ✓ | ✓ | ✓ | ✓ |
 
-Par défaut, l'appui court montre quelque chose et l'appui long emmène ailleurs :
-le graphique puis la chaîne Twitch sur une cagnotte de streamer, le graphique
-puis la page de don sur la cagnotte globale, le nom du palier puis la page de
-don sur un palier, la bascule cagnotte/viewers puis zevent.fr sur un
-classement.
+Réglages par défaut :
 
-L'action longue se déclenche **au seuil**, pas au relâchement : sans cela rien
-n'indiquerait qu'on a assez appuyé, et relâcher plus tôt ne permettrait pas
-d'annuler.
+| Action | Appui court | Appui long |
+| --- | --- | --- |
+| **Cagnotte streamer** | Graphique | Chaîne Twitch |
+| **Cagnotte globale** | Graphique | Page de don |
+| **Palier de dons** | Nom du palier | Page de don |
+| **Classement** | Bascule cagnotte / viewers | zevent.fr |
 
-Les libellés de paliers sont des phrases entières — « Je vous offre une maison
-(promis juré !) » — qu'aucune touche ne peut afficher en permanence. Les
-montrer cinq secondes à la demande évite d'ouvrir le Property Inspector pour
-savoir ce qu'on vise.
+L'appui long se déclenche au seuil des 500 ms, pas au relâchement.
 
 ### Courbe des dons
 
-Un appui bascule une touche **Cagnotte streamer** ou **Cagnotte globale** sur la
-progression de sa cagnotte depuis le début de l'édition ; le même appui la
-range. Le montant reste affiché au-dessus et continue de se rafraîchir toutes
-les minutes ; les barres avancent toutes les dix minutes, granularité de la
-source.
+Un appui bascule une touche **Cagnotte streamer** ou **Cagnotte globale** sur
+la progression de sa cagnotte depuis le début de l'édition, et le même appui la
+range. Le montant reste affiché au-dessus et se rafraîchit toutes les minutes.
+Les barres avancent toutes les dix minutes, granularité de la source.
 
-Cet historique n'existe **que chez InGDoc** : l'API du ZEvent ne publie que le
-montant courant. Si le fichier ne répond pas, la touche garde son affichage
-normal plutôt que de montrer une courbe vide. Retirer l'option des deux menus
-d'appui ramène également la touche à la normale.
-
-La courbe globale vient d'un fichier distinct de celles des streamers, et qui
-ventile les dons entre la LAN et le distanciel : seule leur somme correspond au
-total affiché par le ZEvent. Elle n'a en revanche besoin d'aucun autre appel —
-une touche **Cagnotte globale** posée seule ne télécharge jamais les 244 ko du
-décompte des paliers.
+Cet historique vient d'InGDoc, l'API du ZEvent ne publiant que le montant
+courant. Si le fichier ne répond pas, la touche garde son affichage normal.
+Retirer l'option des deux menus d'appui ramène également la touche à la
+normale.
 
 ### Classement
 
-L'action **Classement** montre les **quatre premiers** du ZEvent, au choix par
-cagnotte ou par nombre de viewers. Un appui bascule d'un critère à l'autre — et
-comme la bascule écrit le réglage, la touche garde son critère au redémarrage et
-le Property Inspector suit le changement au lieu d'annoncer autre chose que ce
-qui s'affiche.
+L'action **Classement** montre les quatre premiers du ZEvent, au choix par
+cagnotte ou par nombre de viewers. Un appui bascule d'un critère à l'autre. La
+bascule écrit le réglage, donc la touche garde son critère au redémarrage.
 
-Deux partis pris imposés par les 72 pixels : les chiffres sont **abrégés par
-défaut**, à rebours des autres actions, et les lignes **ne portent pas le « € »**
-— le titre de la touche dit déjà ce qu'on compte, et le symbole coûtait une
-lettre et demie par ligne : avec lui, `mistermv` et `Anyme023` se tronquaient.
+Les chiffres y sont abrégés par défaut, contrairement aux autres actions, et
+les lignes ne portent pas le « € » : le titre de la touche indique déjà ce
+qu'on compte.
 
 ### Temps forts
 
-Quand un streamer reçoit **cinq fois son rythme des vingt dernières minutes,
-deux relevés de suite**, sa touche s'entoure d'un **cadre blanc** et annonce la
-hausse cumulée du moment. Le cadre s'efface de lui-même trois minutes après le
-dernier relevé qualifiant.
+Quand un streamer reçoit cinq fois son rythme des vingt dernières minutes,
+deux relevés de suite, sa touche s'entoure d'un cadre blanc et affiche la
+hausse cumulée. Le cadre s'efface trois minutes après le dernier relevé
+qualifiant.
 
-C'est la **durée** qui fait tout le travail, et il a fallu rejouer de vraies
-soirées pour s'en convaincre : une première version sans elle encadrait
-14,5 touches sur 340 en permanence. Une minute isolée au-dessus du seuil, c'est
-une grosse donation ; un temps fort, ça dure.
+Un plancher de 50 € par minute évite qu'une chaîne au repos s'allume au
+premier don.
 
-Un plancher de 50 € par minute évite qu'une chaîne au repos, dont le rythme
-habituel est nul, s'allume au premier don de deux euros.
-
-Mesuré en rejouant deux soirées — une calme, un pic — sur 340 participants :
-**0,6 à 1,1 touche encadrée en moyenne, et jamais plus d'une parmi les vingt
-plus grosses cagnottes**.
-
-Rien de tout cela ne coûte une requête : la réponse du ZEvent porte déjà les 338
-cagnottes à chaque sondage. En contrepartie il faut **une dizaine de minutes de
-sondages** avant le premier verdict : au démarrage, aucun rythme de référence
-n'existe encore, et le plugin préfère ne rien signaler qu'inventer. La case
-*Temps forts* désactive l'ensemble.
-
-Deux conséquences à connaître. Un streamer qui domine le ZEvent **depuis
-longtemps** n'est pas signalé : à son rythme de croisière, même énorme, il ne
-*croît* plus. Et pendant une accalmie de l'événement, il peut se passer des
-heures sans aucun cadre — c'est le comportement voulu.
+Il faut une dizaine de minutes de sondages avant le premier verdict, le temps
+d'établir un rythme de référence. La case *Temps forts* désactive la détection.
 
 ### Format des chiffres
 
@@ -132,98 +101,69 @@ Chaque action propose deux écritures, montants et viewers compris :
 | **Complets** (défaut) | `4 063 113 €` | `315 036 viewers` |
 | **Abrégés** | `4.06M €` | `315K viewers` |
 
-Deux décimales sous 10, une au-delà — `1.25M` d'un côté, `800.8K` de l'autre —
-et les zéros inutiles disparaissent (`1.00M` s'écrit `1M`). Une touche fait
-72 pixels : moins de caractères, c'est une police plus grande et un montant
-lisible d'un coup d'œil, au prix de la précision.
+En abrégé : deux décimales sous 10, une au-delà, et les zéros inutiles
+disparaissent. `1.25M`, `800.8K`, et `1.00M` s'écrit `1M`.
 
 ### Paliers de dons
 
 L'action **Palier de dons** montre où en est un streamer sur l'un de ses
 paliers : pourcentage, barre de progression, rang et montant visé. Le Property
-Inspector propose soit **le prochain palier à atteindre** — la touche avance
-alors toute seule d'un palier au suivant — soit un palier précis choisi dans la
-liste, les paliers déjà tombés étant marqués d'une coche.
+Inspector propose soit le prochain palier à atteindre, la touche avançant alors
+toute seule d'un palier au suivant, soit un palier précis choisi dans la liste.
+Les paliers déjà tombés y sont marqués d'une coche.
 
-L'avancement se mesure **depuis le palier précédent**, pas depuis le premier
-euro : à 40 000 € pour un palier à 50 000 € qui suit celui de 40 000 €, la
-barre affiche 0 % et non 80 %. C'est l'effort restant qui intéresse.
+L'avancement se mesure depuis le palier précédent, pas depuis le premier euro.
+À 40 000 € pour un palier à 50 000 € qui suit celui de 40 000 €, la barre
+affiche 0 % et non 80 %.
+
+Tous les participants ne configurent pas de paliers. La touche le signale
+plutôt que d'afficher une barre vide.
 
 ### Deux sources de paliers
 
-Les paliers viennent au choix de l'**API officielle du ZEvent** ou d'**InGDoc**
+Les paliers viennent au choix de l'API officielle du ZEvent ou d'**InGDoc**
 ([evenmorestats.fr](https://zevent.gdoc.fr/donation_goals/)), qui les publie
 plus complètement : sur 60 streamers observés, 8 % sont annoncés sans aucun
-palier par l'officiel alors qu'ils en ont une quinzaine — Mastu en a 15,
-l'API du ZEvent en renvoie 0.
+palier par l'officiel alors qu'ils en ont une quinzaine.
 
 | Réglage | Comportement |
 | --- | --- |
 | **Auto** *(défaut)* | InGDoc, et repli sur l'officiel dès qu'il ne répond pas |
-| **InGDoc** | InGDoc seul — la touche signale l'indisponibilité plutôt que de basculer en douce |
-| **ZEvent** | l'API officielle seule |
+| **InGDoc** | InGDoc seul, la touche signalant l'indisponibilité |
+| **ZEvent** | L'API officielle seule |
 
-InGDoc permet en prime d'annoncer, dans le menu déroulant, **le nombre de
-paliers de chaque streamer** — un seul appel couvre les 338 participants.
-L'API officielle ne les expose que fiche par fiche : il en faudrait 338, donc
-l'annotation disparaît quand on impose cette source.
-
-Tous les participants n'en configurent pas — la touche le dit alors clairement
-plutôt que d'afficher une barre vide.
-
-## Couleurs
-
-La palette est relevée sur zevent.fr, pas approximée : vert **`#00BD00`** en
-accent (celui de la navigation et des pastilles « en direct » du site), noirs
-neutres `#0B0B0B` / `#242424` en fond. Le site réserve le blanc à ses grands
-compteurs et le vert aux montants de sa liste de streamers — les touches
-reprennent cette répartition : cagnotte d'un streamer en vert, total du ZEvent
-en blanc sous un intitulé vert.
-
-Le texte, lui, utilise **`#66D766`**, autre valeur de la même palette : à
-72 pixels, sur un avatar assombri, le vert de marque perd trop de lisibilité en
-petits caractères. Le bandeau « en direct », qui est un aplat, garde `#00BD00`.
-
-L'incrustation sombre posée sur l'avatar est calibrée pour que le vert reste
-lisible même sur un portrait clair ou très saturé.
+Avec InGDoc, le menu déroulant annonce en prime le nombre de paliers de chaque
+streamer. L'API officielle ne les expose que fiche par fiche, donc cette
+annotation disparaît quand on impose cette source.
 
 ## Property Inspector
 
-Le choix du streamer se fait par **barre de recherche** (insensible à la casse
-et aux accents) couplée à un **menu déroulant** listant les 300+ participants
-avec leur cagnotte et leur statut. La liste se trie par cagnotte, nom, viewers
-ou « en direct d'abord », et la sélection courante reste toujours proposée même
+Le choix du streamer se fait par barre de recherche, insensible à la casse et
+aux accents, couplée à un menu déroulant listant les 300+ participants avec
+leur cagnotte et leur statut. La liste se trie par cagnotte, nom, viewers ou
+« en direct d'abord ». La sélection courante reste toujours proposée, même
 quand la recherche l'exclut.
 
 Sur l'action **Palier de dons**, ce même menu annonce le nombre de paliers de
-chaque streamer — `🟢 Mastu — 15 paliers` —, de quoi choisir sans ouvrir chaque
-fiche.
+chaque streamer : `🟢 Zerator — 15 paliers`.
 
 ## Source des données
 
-Les cagnottes viennent de l'API publique du ZEvent, `https://zevent.fr/api/` —
-celle qu'utilise le site lui-même. Elle n'émet aucun en-tête CORS : un Property
-Inspector, qui est une page web, ne peut pas l'appeler. C'est donc le plugin
-Node qui interroge le ZEvent et pousse le catalogue vers l'interface.
+Les cagnottes viennent de l'API publique du ZEvent, `https://zevent.fr/api/`.
+Elle n'émet aucun en-tête CORS, donc le Property Inspector ne peut pas
+l'appeler. C'est le plugin Node qui l'interroge et lui pousse le catalogue.
 
-Une seule requête sortante alimente toutes les touches, une fois par minute et
-seulement tant qu'une touche du plugin est visible. La réponse pèse 157 ko — la
-liste complète des participants, dont une touche n'utilise qu'une ligne : c'est
-ce poids qui fixe la cadence, pas la charge serveur, le ZEvent servant cette
-route depuis un cache Cloudflare. Une minute représente environ 9 Mo par heure,
-contre 28 Mo si l'on interrogeait l'API toutes les 20 secondes.
-
-Aucun appel ne part à moins de 15 secondes du précédent, bouton *Rafraîchir*
-compris : c'est la durée de validité que le ZEvent déclare lui-même
-(`cache-control: max-age=15`), en deçà on retéléchargerait à l'identique une
-réponse déjà servie.
+Une seule requête alimente toutes les touches, une fois par minute, et
+seulement tant qu'une touche est visible. La réponse pèse 157 ko. Le délai
+minimal entre deux appels est de 15 secondes, bouton *Rafraîchir* compris,
+soit le `cache-control: max-age=15` déclaré par le ZEvent.
 
 En cas de panne, le dernier état connu reste affiché et les tentatives
-s'espacent progressivement (jusqu'à 5 minutes). Les avatars sont récupérés en
-70×70 — la variante que Twitch expose déjà — et gardés en mémoire.
+s'espacent jusqu'à 5 minutes. Les avatars sont récupérés en 70×70 et gardés en
+mémoire.
 
-Les **paliers** n'y figurent pas. Deux routes les portent, selon la source
-choisie :
+Les paliers ne figurent pas dans cette réponse. Deux routes les portent, selon
+la source choisie :
 
 | Route | Contenu | Poids |
 | --- | --- | --- |
@@ -234,14 +174,11 @@ choisie :
 | `evenmorestats-cache…/metrics/<ev>/streamers/<id>.json` | historique des dons d'un streamer, un point toutes les 10 min | ~9 ko |
 | `evenmorestats-cache…/metrics/<ev>/global.json` | historique de la cagnotte globale, même cadence | ~27 ko |
 
-Dans les deux cas, seuls les streamers réellement posés sur une touche
-« palier » sont interrogés, jamais les 338. L'édition en cours se déduit des
-dates plutôt que d'être codée en dur : le plugin suivra les prochaines sans
-modification.
+Seuls les streamers posés sur une touche « palier » sont interrogés. L'édition
+en cours se déduit des dates, elle n'est pas codée en dur.
 
 InGDoc est un service communautaire, sans en-tête de cache ni limite de débit
-annoncée. Il est sollicité avec la même retenue que le ZEvent, et le mode
-« auto » retombe sur l'officiel s'il ne répond pas.
+annoncée. Le mode « auto » retombe sur l'officiel s'il ne répond pas.
 
 ## Développement
 
@@ -255,45 +192,37 @@ npm run link       # crée le lien symbolique vers le dossier Plugins de Stream 
 Ensuite, `npm run watch` reconstruit et redémarre le plugin à chaque
 modification.
 
-`npm run preview` interroge le vrai ZEvent et écrit les visuels de touche en SVG
-dans `.preview/` : de quoi itérer sur le rendu sans repasser par Stream Deck.
-
-`npm run check` vérifie que le dossier `.sdPlugin` se tient : point d'entrée
-présent, icônes déclarées par le manifest réellement sur le disque (variantes
-`@2x` comprises), Property Inspectors accessibles. Stream Deck ne signale ces
-chemins qu'à l'installation — ce contrôle les fait remonter au build.
-
-`npm run pack` produit le `.streamDeckPlugin` distribuable.
+| Commande | Rôle |
+| --- | --- |
+| `npm run preview` | Écrit les visuels de touche en SVG dans `.preview/`, sur données réelles |
+| `npm run check` | Vérifie le dossier `.sdPlugin` : point d'entrée, icônes déclarées, Property Inspectors |
+| `npm run pack` | Produit le `.streamDeckPlugin` distribuable |
 
 ### Versions
 
-La version vit dans `package.json`. `npm version patch` la propage
-automatiquement au `Version` du manifest — que Stream Deck attend en quatre
-segments — et au badge du README, via `scripts/sync-version.mjs`. La CI refuse
-toute divergence (`npm run sync-version -- --check`).
+La version vit dans `package.json`. `npm version patch` la propage au `Version`
+du manifest, que Stream Deck attend en quatre segments, et au badge du README,
+via `scripts/sync-version.mjs`. La CI refuse toute divergence
+(`npm run sync-version -- --check`).
 
 ### Publication
 
 Un tag `v*` poussé sur le dépôt déclenche l'empaquetage et crée la release
 GitHub avec le `.streamDeckPlugin` en pièce jointe.
 
-> `Nodejs.Debug` est **absent** du manifest, et doit le rester : le port de
-> débogage n'a rien à faire chez les utilisateurs, et le job de publication
-> refuse un tag tant que le champ figure. Ajoutez-le localement — avec la valeur
-> `enabled` — le temps d'un débogage, sans le committer. N'écrivez jamais
-> `disabled` : Stream Deck passe cette valeur à Node en argument de ligne de
-> commande et le plugin ne démarre plus.
+`Nodejs.Debug` doit rester absent du manifest, et le job de publication refuse
+un tag tant que le champ y figure. Voir [CONTRIBUTING.md](CONTRIBUTING.md) pour
+le détail.
 
 ## Contribuer
 
-Bugs, idées et pull requests sont les bienvenus — voir
+Bugs, idées et pull requests sont les bienvenus. Voir
 [CONTRIBUTING.md](CONTRIBUTING.md), qui détaille la mise en route et les
-quelques contraintes du plugin qui ne se devinent pas à la lecture du code.
+contraintes du plugin qui ne se lisent pas dans le code.
 
 ## Licence
 
-[MIT](LICENSE) — faites-en ce que vous voulez, en gardant la mention de
-copyright.
+[MIT](LICENSE), en gardant la mention de copyright.
 
 ## Crédits
 

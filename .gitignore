@@ -4,3 +4,4 @@ fr.quentinperou.zevent.sdPlugin/bin/
 *.log
 .preview/
 fr.quentinperou.zevent.sdPlugin/logs/
+.local/

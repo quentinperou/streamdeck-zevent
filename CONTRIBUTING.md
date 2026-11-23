@@ -134,7 +134,11 @@ port de débogage chez les utilisateurs.
 ## Couleurs
 
 La palette vient de zevent.fr : vert `#00BD00`, noirs neutres `#0B0B0B` et
-`#242424`. Elle a été relevée sur le site, pas choisie. Si la charte du ZEvent
+`#242424`. Elle a été relevée sur le site, pas choisie.
+
+Le texte vert utilise `#66D766` et non `#00BD00` : à 72 pixels, sur un avatar
+assombri, le vert de marque devient illisible en petits caractères. Les aplats
+comme le bandeau « en direct » gardent `#00BD00`. Si la charte du ZEvent
 évolue, mettez à jour `COLORS` dans `src/render.ts`, les variables de
 `ui/css/pi.css` et `scripts/make-icons.mjs` — et dites d'où vient la nouvelle
 valeur.
